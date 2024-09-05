@@ -21,44 +21,44 @@ namespace beman::net29::detail
 class beman::net29::detail::io_context_scheduler
 {
 private:
-    ::beman::net29::detail::context_base* _D_context;
+    ::beman::net29::detail::context_base* d_context;
 
 public:
-    io_context_scheduler(::beman::net29::detail::context_base* _Context)
-        : _D_context(_Context)
+    io_context_scheduler(::beman::net29::detail::context_base* context)
+        : d_context(context)
     {
-        assert(this->_D_context);
+        assert(this->d_context);
     }
 
-    auto _Get_context() const { return this->_D_context; }
+    auto get_context() const { return this->d_context; }
 
-    auto _Cancel(beman::net29::detail::io_base* _Cancel_op, beman::net29::detail::io_base* _Op) -> void
+    auto cancel(beman::net29::detail::io_base* cancel_op, beman::net29::detail::io_base* op) -> void
     {
-        this->_D_context->_Cancel(_Cancel_op, _Op);
+        this->d_context->cancel(cancel_op, op);
     }
-    auto _Accept(::beman::net29::detail::context_base::_Accept_operation* _Op) -> bool
+    auto accept(::beman::net29::detail::context_base::accept_operation* op) -> bool
     {
-        return this->_D_context->_Accept(_Op);
+        return this->d_context->accept(op);
     }
-    auto _Connect(::beman::net29::detail::context_base::_Connect_operation* _Op) -> bool
+    auto connect(::beman::net29::detail::context_base::connect_operation* op) -> bool
     {
-        return this->_D_context->_Connect(_Op);
+        return this->d_context->connect(op);
     }
-    auto _Receive(::beman::net29::detail::context_base::_Receive_operation* _Op) -> bool
+    auto receive(::beman::net29::detail::context_base::receive_operation* op) -> bool
     {
-        return this->_D_context->_Receive(_Op);
+        return this->d_context->receive(op);
     }
-    auto _Send(::beman::net29::detail::context_base::_Send_operation* _Op) -> bool
+    auto send(::beman::net29::detail::context_base::send_operation* op) -> bool
     {
-        return this->_D_context->_Send(_Op);
+        return this->d_context->send(op);
     }
-    auto _Resume_after(::beman::net29::detail::context_base::_Resume_after_operation* _Op) -> bool
+    auto resume_after(::beman::net29::detail::context_base::resume_after_operation* op) -> bool
     {
-        return this->_D_context->_Resume_after(_Op);
+        return this->d_context->resume_after(op);
     }
-    auto _Resume_at(::beman::net29::detail::context_base::_Resume_at_operation* _Op) -> bool
+    auto resume_at(::beman::net29::detail::context_base::resume_at_operation* op) -> bool
     {
-        return this->_D_context->_Resume_at(_Op);
+        return this->d_context->resume_at(op);
     }
 };
 

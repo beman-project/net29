@@ -14,41 +14,41 @@
 
 // ----------------------------------------------------------------------------
 
-template <typename _Protocol>
+template <typename Protocol>
 class beman::net29::basic_stream_socket
-    : public basic_socket<_Protocol>
+    : public basic_socket<Protocol>
 {
 public:
     using native_handle_type = ::beman::net29::detail::native_handle_type;
-    using protocol_type = _Protocol;
+    using protocol_type = Protocol;
     using endpoint_type = typename protocol_type::endpoint;
 
 private:
-    endpoint_type _D_endpoint;
+    endpoint_type d_endpoint;
 
 public:
     basic_stream_socket(basic_stream_socket&&) = default;
     basic_stream_socket& operator= (basic_stream_socket&&) = default;
-    basic_stream_socket(::beman::net29::detail::context_base* context, ::beman::net29::detail::socket_id _Id)
-        : basic_socket<_Protocol>(context, _Id)
+    basic_stream_socket(::beman::net29::detail::context_base* context, ::beman::net29::detail::socket_id id)
+        : basic_socket<Protocol>(context, id)
     {
     }
-    basic_stream_socket(::beman::net29::io_context& context, endpoint_type const& _Endpoint)
-        : beman::net29::basic_socket<_Protocol>(context.get_scheduler()._Get_context(),
-            ::std::invoke([_P = _Endpoint.protocol(), &context]{
-                ::std::error_code _Error{};
-                auto _Rc(context._Make_socket(_P.family(), _P.type(), _P.protocol(), _Error));
-                if (_Error)
+    basic_stream_socket(::beman::net29::io_context& context, endpoint_type const& endpoint)
+        : beman::net29::basic_socket<Protocol>(context.get_scheduler().get_context(),
+            ::std::invoke([p = endpoint.protocol(), &context]{
+                ::std::error_code error{};
+                auto rc(context.make_socket(p.family(), p.type(), p.protocol(), error));
+                if (error)
                 {
-                    throw ::std::system_error(_Error);
+                    throw ::std::system_error(error);
                 }
-                return _Rc;
+                return rc;
             }))
-        , _D_endpoint(_Endpoint) 
+        , d_endpoint(endpoint) 
     {
     }
 
-    auto get_endpoint() const -> endpoint_type { return this->_D_endpoint; }
+    auto get_endpoint() const -> endpoint_type { return this->d_endpoint; }
 };
 
 

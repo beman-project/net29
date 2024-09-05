@@ -18,47 +18,47 @@ namespace beman::net29::detail
 
 // ----------------------------------------------------------------------------
 
-template <typename _Record>
+template <typename Record>
 class beman::net29::detail::container
 {
 private:
-    ::std::vector<::std::variant<::std::size_t, _Record>> _Records;
-    ::std::size_t                                         _Free{};
+    ::std::vector<::std::variant<::std::size_t, Record>> records;
+    ::std::size_t                                        free{};
 
 public:
-    auto _Insert(_Record _R) -> ::beman::net29::detail::socket_id;
-    auto _Erase(::beman::net29::detail::socket_id _Id) -> void;
-    auto operator[](::beman::net29::detail::socket_id _Id) -> _Record&;
+    auto insert(Record r) -> ::beman::net29::detail::socket_id;
+    auto erase(::beman::net29::detail::socket_id id) -> void;
+    auto operator[](::beman::net29::detail::socket_id id) -> Record&;
 };
 
 // ----------------------------------------------------------------------------
 
-template <typename _Record>
-inline auto beman::net29::detail::container<_Record>::_Insert(_Record _R) -> ::beman::net29::detail::socket_id
+template <typename Record>
+inline auto beman::net29::detail::container<Record>::insert(Record r) -> ::beman::net29::detail::socket_id
 {
-    if (this->_Free == this->_Records.size())
+    if (this->free == this->records.size())
     {
-        this->_Records.emplace_back(::std::move(_R));
-        return ::beman::net29::detail::socket_id(this->_Free++);
+        this->records.emplace_back(::std::move(r));
+        return ::beman::net29::detail::socket_id(this->free++);
     }
     else
     {
-        ::std::size_t _Rc(std::exchange(this->_Free, ::std::get<0>(this->_Records[this->_Free])));
-        this->_Records[_Rc] = ::std::move(_R);
-        return ::beman::net29::detail::socket_id(_Rc);
+        ::std::size_t rc(std::exchange(this->free, ::std::get<0>(this->records[this->free])));
+        this->records[rc] = ::std::move(r);
+        return ::beman::net29::detail::socket_id(rc);
     }
 }
 
-template <typename _Record>
-inline auto beman::net29::detail::container<_Record>::_Erase(::beman::net29::detail::socket_id _Id) -> void
+template <typename Record>
+inline auto beman::net29::detail::container<Record>::erase(::beman::net29::detail::socket_id id) -> void
 {
-    this->_Records[::std::size_t(_Id)] = std::exchange(this->_Free, ::std::size_t(_Id));
+    this->records[::std::size_t(id)] = std::exchange(this->free, ::std::size_t(id));
 }
 
-template <typename _Record>
-inline auto beman::net29::detail::container<_Record>::operator[](::beman::net29::detail::socket_id _Id) -> _Record&
+template <typename Record>
+inline auto beman::net29::detail::container<Record>::operator[](::beman::net29::detail::socket_id id) -> Record&
 {
-    return ::std::get<1>(this->_Records[::std::size_t(_Id)]);
+    return ::std::get<1>(this->records[::std::size_t(id)]);
 }
 
 // ----------------------------------------------------------------------------

@@ -26,9 +26,9 @@ namespace beman::net29::detail
 
 struct beman::net29::detail::poll_record final
 {
-    poll_record(::beman::net29::detail::native_handle_type _H): _Handle(_H) {}
-    ::beman::net29::detail::native_handle_type                   _Handle;
-    bool                                                   _Blocking{true};
+    poll_record(::beman::net29::detail::native_handle_type h): handle(h) {}
+    ::beman::net29::detail::native_handle_type                   handle;
+    bool                                                   blocking{true};
 };
 
 // ----------------------------------------------------------------------------
@@ -36,77 +36,77 @@ struct beman::net29::detail::poll_record final
 struct beman::net29::detail::poll_context final
     : ::beman::net29::detail::context_base
 {
-    ::beman::net29::detail::container<::beman::net29::detail::poll_record> _D_sockets;
-    ::std::vector<::pollfd>     _D_poll;
-    ::std::vector<::beman::net29::detail::io_base*> _D_outstanding;
+    ::beman::net29::detail::container<::beman::net29::detail::poll_record> d_sockets;
+    ::std::vector<::pollfd>     d_poll;
+    ::std::vector<::beman::net29::detail::io_base*> d_outstanding;
 
-    auto _Make_socket(int _Fd) -> ::beman::net29::detail::socket_id override final
+    auto make_socket(int fd) -> ::beman::net29::detail::socket_id override final
     {
-        return this->_D_sockets._Insert(_Fd);
+        return this->d_sockets.insert(fd);
     }
-    auto _Make_socket(int _D, int _T, int _P, ::std::error_code& _Error)
+    auto make_socket(int d, int t, int p, ::std::error_code& error)
         -> ::beman::net29::detail::socket_id override final
     {
-        int _Fd(::socket(_D, _T, _P));
-        if (_Fd < 0)
+        int fd(::socket(d, t, p));
+        if (fd < 0)
         {
-            _Error = ::std::error_code(errno, ::std::system_category());
+            error = ::std::error_code(errno, ::std::system_category());
             return ::beman::net29::detail::socket_id::invalid;
         }
-        return this->_Make_socket(_Fd);
+        return this->make_socket(fd);
     }
-    auto _Release(::beman::net29::detail::socket_id _Id, ::std::error_code& _Error) -> void override final
+    auto release(::beman::net29::detail::socket_id id, ::std::error_code& error) -> void override final
     {
-        ::beman::net29::detail::native_handle_type _Handle(this->_D_sockets[_Id]._Handle);
-        this->_D_sockets._Erase(_Id);
-        if (::close(_Handle) < 0)
+        ::beman::net29::detail::native_handle_type handle(this->d_sockets[id].handle);
+        this->d_sockets.erase(id);
+        if (::close(handle) < 0)
         {
-            _Error = ::std::error_code(errno, ::std::system_category());
+            error = ::std::error_code(errno, ::std::system_category());
         }
     }
-    auto _Native_handle(::beman::net29::detail::socket_id _Id) -> ::beman::net29::detail::native_handle_type override final
+    auto native_handle(::beman::net29::detail::socket_id id) -> ::beman::net29::detail::native_handle_type override final
     {
-        return this->_D_sockets[_Id]._Handle;
+        return this->d_sockets[id].handle;
     }
-    auto _Set_option(::beman::net29::detail::socket_id _Id,
-                     int _Level,
-                     int _Name,
-                     void const* _Data,
-                     ::socklen_t _Size,
-                     ::std::error_code& _Error) -> void override final
+    auto set_option(::beman::net29::detail::socket_id id,
+                     int level,
+                     int name,
+                     void const* data,
+                     ::socklen_t size,
+                     ::std::error_code& error) -> void override final
     {
-        if (::setsockopt(this->_Native_handle(_Id), _Level, _Name, _Data, _Size) < 0)
+        if (::setsockopt(this->native_handle(id), level, name, data, size) < 0)
         {
-            _Error = ::std::error_code(errno, ::std::system_category());
+            error = ::std::error_code(errno, ::std::system_category());
         }
     }
-    auto _Bind(::beman::net29::detail::socket_id _Id,
+    auto bind(::beman::net29::detail::socket_id id,
                ::beman::net29::detail::endpoint const& endpoint,
-               ::std::error_code& _Error) -> void override final
+               ::std::error_code& error) -> void override final
     {
-        if (::bind(this->_Native_handle(_Id), endpoint.data(), endpoint.size()) < 0)
+        if (::bind(this->native_handle(id), endpoint.data(), endpoint.size()) < 0)
         {
-            _Error = ::std::error_code(errno, ::std::system_category());
+            error = ::std::error_code(errno, ::std::system_category());
         }
     }
-    auto _Listen(::beman::net29::detail::socket_id _Id, int _No, ::std::error_code& _Error) -> void override final
+    auto listen(::beman::net29::detail::socket_id id, int no, ::std::error_code& error) -> void override final
     {
-        if (::listen(this->_Native_handle(_Id), _No) < 0)
+        if (::listen(this->native_handle(id), no) < 0)
         {
-            _Error = ::std::error_code(errno, ::std::system_category());
+            error = ::std::error_code(errno, ::std::system_category());
         }
     }
 
     auto run_one() -> ::std::size_t override final
     {
-        if (this->_D_poll.empty())
+        if (this->d_poll.empty())
         {
             return ::std::size_t{};
         }
         while (true)
         {
-            int _Rc(::poll(this->_D_poll.data(), this->_D_poll.size(), -1));
-            if (_Rc < 0)
+            int rc(::poll(this->d_poll.data(), this->d_poll.size(), -1));
+            if (rc < 0)
             {
                 switch (errno)
                 {
@@ -119,19 +119,19 @@ struct beman::net29::detail::poll_context final
             }
             else
             {
-                for (::std::size_t _I(this->_D_poll.size()); 0 < _I--; )
+                for (::std::size_t i(this->d_poll.size()); 0 < i--; )
                 {
-                    if (this->_D_poll[_I].revents & (this->_D_poll[_I].events | POLLERR))
+                    if (this->d_poll[i].revents & (this->d_poll[i].events | POLLERR))
                     {
-                        ::beman::net29::detail::io_base* _Completion = this->_D_outstanding[_I];
-                        if (_I + 1u != this->_D_poll.size())
+                        ::beman::net29::detail::io_base* completion = this->d_outstanding[i];
+                        if (i + 1u != this->d_poll.size())
                         {
-                            this->_D_poll[_I] = this->_D_poll.back();
-                            this->_D_outstanding[_I] = this->_D_outstanding.back();
+                            this->d_poll[i] = this->d_poll.back();
+                            this->d_outstanding[i] = this->d_outstanding.back();
                         }
-                        this->_D_poll.pop_back();
-                        this->_D_outstanding.pop_back();
-                        _Completion->_Work(*this, _Completion);
+                        this->d_poll.pop_back();
+                        this->d_outstanding.pop_back();
+                        completion->work(*this, completion);
                         return ::std::size_t(1);
                     }
                 }
@@ -139,44 +139,44 @@ struct beman::net29::detail::poll_context final
         }
         return ::std::size_t{};
     }
-    auto _Wakeup() -> void
+    auto wakeup() -> void
     {
         //-dk:TODO wake-up polling thread
     }
 
-    auto _Add_Outstanding(::beman::net29::detail::io_base* _Completion) -> bool
+    auto add_Outstanding(::beman::net29::detail::io_base* completion) -> bool
     {
-        auto _Id{_Completion->_Id};
-        if (this->_D_sockets[_Id]._Blocking || !_Completion->_Work(*this, _Completion))
+        auto id{completion->id};
+        if (this->d_sockets[id].blocking || !completion->work(*this, completion))
         {
-            this->_D_poll.emplace_back(::pollfd{this->_Native_handle(_Id), short(_Completion->_Event), short()});
-            this->_D_outstanding.emplace_back(_Completion);
-            this->_Wakeup();
+            this->d_poll.emplace_back(::pollfd{this->native_handle(id), short(completion->event), short()});
+            this->d_outstanding.emplace_back(completion);
+            this->wakeup();
             return false;
         }
         return true;
     }
 
-    auto _Cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void override final
+    auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void override final
     {
         //-dk:TODO
     }
-    auto _Accept(::beman::net29::detail::context_base::_Accept_operation* _Completion)
+    auto accept(::beman::net29::detail::context_base::accept_operation* completion)
         -> bool override final
     {
-        _Completion->_Work =
-            [](::beman::net29::detail::context_base& _Ctxt, ::beman::net29::detail::io_base* _Comp)
+        completion->work =
+            [](::beman::net29::detail::context_base& ctxt, ::beman::net29::detail::io_base* comp)
             {
-                auto _Id{_Comp->_Id};
-                auto& _Completion(*static_cast<_Accept_operation*>(_Comp));
+                auto id{comp->id};
+                auto& completion(*static_cast<accept_operation*>(comp));
 
                 while (true)
                 {
-                    int _Rc = ::accept(_Ctxt._Native_handle(_Id), ::std::get<0>(_Completion).data(), &::std::get<1>(_Completion));
-                    if (0 <= _Rc)
+                    int rc = ::accept(ctxt.native_handle(id), ::std::get<0>(completion).data(), &::std::get<1>(completion));
+                    if (0 <= rc)
                     {
-                        ::std::get<2>(_Completion) =  _Ctxt._Make_socket(_Rc);
-                        _Completion.complete();
+                        ::std::get<2>(completion) =  ctxt.make_socket(rc);
+                        completion.complete();
                         return true;
                     }
                     else
@@ -184,7 +184,7 @@ struct beman::net29::detail::poll_context final
                         switch (errno)
                         {
                         default:
-                            _Completion.error(::std::error_code(errno, ::std::system_category()));
+                            completion.error(::std::error_code(errno, ::std::system_category()));
                             return true;
                         case EINTR:
                             break;
@@ -194,17 +194,17 @@ struct beman::net29::detail::poll_context final
                     }
                 }
             };
-        return this->_Add_Outstanding(_Completion);
+        return this->add_Outstanding(completion);
     }
-    auto _Connect(::beman::net29::detail::context_base::_Connect_operation*) -> bool override { return {}; /*-dk:TODO*/ } 
-    auto _Receive(::beman::net29::detail::context_base::_Receive_operation*) -> bool override { return {}; /*-dk:TODO*/ }
-    auto _Send(::beman::net29::detail::context_base::_Send_operation*) -> bool override { return {}; /*-dk:TODO*/ }
-    auto _Resume_after(::beman::net29::detail::context_base::_Resume_after_operation*) -> bool override
+    auto connect(::beman::net29::detail::context_base::connect_operation*) -> bool override { return {}; /*-dk:TODO*/ } 
+    auto receive(::beman::net29::detail::context_base::receive_operation*) -> bool override { return {}; /*-dk:TODO*/ }
+    auto send(::beman::net29::detail::context_base::send_operation*) -> bool override { return {}; /*-dk:TODO*/ }
+    auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> bool override
     {
         //-dk:TODO
         return {};
     }
-    auto _Resume_at(::beman::net29::detail::context_base::_Resume_at_operation*) -> bool override
+    auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> bool override
     {
         //-dk:TODO
         return {};

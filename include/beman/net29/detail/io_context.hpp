@@ -31,57 +31,57 @@ namespace beman::net29
 class beman::net29::io_context
 {
 private:
-    ::std::unique_ptr<::beman::net29::detail::context_base> _D_owned{new ::beman::net29::detail::poll_context()};
-    ::beman::net29::detail::context_base&                   _D_context{*this->_D_owned};
+    ::std::unique_ptr<::beman::net29::detail::context_base> d_owned{new ::beman::net29::detail::poll_context()};
+    ::beman::net29::detail::context_base&                   d_context{*this->d_owned};
 
 public:
     using scheduler_type = ::beman::net29::detail::io_context_scheduler;
     class executor_type {};
 
     io_context() { std::signal(SIGPIPE, SIG_IGN); }
-    io_context(::beman::net29::detail::context_base& _Context): _D_owned(), _D_context(_Context) {}
+    io_context(::beman::net29::detail::context_base& context): d_owned(), d_context(context) {}
     io_context(io_context&&) = delete;
 
-    auto _Make_socket(int _D, int _T, int _P, ::std::error_code& _Error) -> ::beman::net29::detail::socket_id
+    auto make_socket(int d, int t, int p, ::std::error_code& error) -> ::beman::net29::detail::socket_id
     {
-        return this->_D_context._Make_socket(_D, _T, _P, _Error);
+        return this->d_context.make_socket(d, t, p, error);
     }
-    auto _Release(::beman::net29::detail::socket_id _Id, ::std::error_code& _Error) -> void
+    auto release(::beman::net29::detail::socket_id id, ::std::error_code& error) -> void
     {
-        return this->_D_context._Release(_Id, _Error);
+        return this->d_context.release(id, error);
     }
-    auto _Native_handle(::beman::net29::detail::socket_id _Id) -> ::beman::net29::detail::native_handle_type
+    auto native_handle(::beman::net29::detail::socket_id id) -> ::beman::net29::detail::native_handle_type
     {
-        return this->_D_context._Native_handle(_Id);
+        return this->d_context.native_handle(id);
     }
-    auto _Set_option(::beman::net29::detail::socket_id _Id,
-                     int _Level,
-                     int _Name,
-                     void const* _Data,
-                     ::socklen_t _Size,
-                     ::std::error_code& _Error) -> void
+    auto set_option(::beman::net29::detail::socket_id id,
+                     int level,
+                     int name,
+                     void const* data,
+                     ::socklen_t size,
+                     ::std::error_code& error) -> void
     {
-        this->_D_context._Set_option(_Id, _Level, _Name, _Data, _Size, _Error);
+        this->d_context.set_option(id, level, name, data, size, error);
     }
-    auto _Bind(::beman::net29::detail::socket_id _Id, ::beman::net29::ip::basic_endpoint<::beman::net29::ip::tcp> const& _Endpoint, ::std::error_code& _Error)
+    auto bind(::beman::net29::detail::socket_id id, ::beman::net29::ip::basic_endpoint<::beman::net29::ip::tcp> const& endpoint, ::std::error_code& error)
     {
-        this->_D_context._Bind(_Id, ::beman::net29::detail::endpoint(_Endpoint), _Error);
+        this->d_context.bind(id, ::beman::net29::detail::endpoint(endpoint), error);
     }
-    auto _Listen(::beman::net29::detail::socket_id _Id, int _No, ::std::error_code& _Error)
+    auto listen(::beman::net29::detail::socket_id id, int no, ::std::error_code& error)
     {
-        this->_D_context._Listen(_Id, _No, _Error);
+        this->d_context.listen(id, no, error);
     }
-    auto get_scheduler() -> scheduler_type { return scheduler_type(&this->_D_context); }
+    auto get_scheduler() -> scheduler_type { return scheduler_type(&this->d_context); }
 
-    ::std::size_t run_one() { return this->_D_context.run_one(); }
+    ::std::size_t run_one() { return this->d_context.run_one(); }
     ::std::size_t run()
     {
-        ::std::size_t _Count{};
-        while (::std::size_t _C = this->run_one())
+        ::std::size_t count{};
+        while (::std::size_t c = this->run_one())
         {
-            _Count += _C;
+            count += c;
         }
-        return _Count;
+        return count;
     }
 };
 

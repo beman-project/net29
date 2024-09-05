@@ -19,6 +19,8 @@
 #include <beman/net29/detail/socket_base.hpp>
 #include <beman/net29/detail/basic_socket.hpp>
 #include <beman/net29/detail/basic_stream_socket.hpp>
+#include <beman/net29/detail/sender.hpp>
+#include <beman/net29/detail/operations.hpp>
 
 // ----------------------------------------------------------------------------
 

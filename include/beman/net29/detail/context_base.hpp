@@ -23,46 +23,46 @@ namespace beman::net29::detail
 
 struct beman::net29::detail::context_base
 {
-    using _Accept_operation = ::beman::net29::detail::io_operation<
+    using accept_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::beman::net29::detail::endpoint,
                      ::socklen_t,
                      ::std::optional<::beman::net29::detail::socket_id>
                      >
         >;
-    using _Connect_operation = ::beman::net29::detail::io_operation<
+    using connect_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::beman::net29::detail::endpoint>
         >;
-    using _Receive_operation = ::beman::net29::detail::io_operation<
+    using receive_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::msghdr, int, ::std::size_t>
         >;
-    using _Send_operation = ::beman::net29::detail::io_operation<
+    using send_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::msghdr, int, ::std::size_t>
         >;
-    using _Resume_after_operation = ::beman::net29::detail::io_operation<
+    using resume_after_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::std::chrono::microseconds, ::timeval>
         >;
-    using _Resume_at_operation = ::beman::net29::detail::io_operation<
+    using resume_at_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::std::chrono::system_clock::time_point, ::timeval>
         >;
 
     virtual ~context_base() = default;
-    virtual auto _Make_socket(int) -> ::beman::net29::detail::socket_id = 0;
-    virtual auto _Make_socket(int, int, int, ::std::error_code&) -> ::beman::net29::detail::socket_id = 0;
-    virtual auto _Release(::beman::net29::detail::socket_id, ::std::error_code&) -> void = 0;
-    virtual auto _Native_handle(::beman::net29::detail::socket_id) -> ::beman::net29::detail::native_handle_type = 0;
-    virtual auto _Set_option(::beman::net29::detail::socket_id, int, int, void const*, ::socklen_t, ::std::error_code&) -> void = 0;
-    virtual auto _Bind(::beman::net29::detail::socket_id, ::beman::net29::detail::endpoint const&, ::std::error_code&) -> void = 0;
-    virtual auto _Listen(::beman::net29::detail::socket_id, int, ::std::error_code&) -> void = 0;
+    virtual auto make_socket(int) -> ::beman::net29::detail::socket_id = 0;
+    virtual auto make_socket(int, int, int, ::std::error_code&) -> ::beman::net29::detail::socket_id = 0;
+    virtual auto release(::beman::net29::detail::socket_id, ::std::error_code&) -> void = 0;
+    virtual auto native_handle(::beman::net29::detail::socket_id) -> ::beman::net29::detail::native_handle_type = 0;
+    virtual auto set_option(::beman::net29::detail::socket_id, int, int, void const*, ::socklen_t, ::std::error_code&) -> void = 0;
+    virtual auto bind(::beman::net29::detail::socket_id, ::beman::net29::detail::endpoint const&, ::std::error_code&) -> void = 0;
+    virtual auto listen(::beman::net29::detail::socket_id, int, ::std::error_code&) -> void = 0;
 
     virtual auto run_one() -> ::std::size_t = 0;
 
-    virtual auto _Cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void = 0;
-    virtual auto _Accept(::beman::net29::detail::context_base::_Accept_operation*) -> bool = 0;
-    virtual auto _Connect(::beman::net29::detail::context_base::_Connect_operation*) -> bool = 0;
-    virtual auto _Receive(::beman::net29::detail::context_base::_Receive_operation*) -> bool = 0;
-    virtual auto _Send(::beman::net29::detail::context_base::_Send_operation*) -> bool = 0;
-    virtual auto _Resume_after(::beman::net29::detail::context_base::_Resume_after_operation*) -> bool = 0;
-    virtual auto _Resume_at(::beman::net29::detail::context_base::_Resume_at_operation*) -> bool = 0;
+    virtual auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void = 0;
+    virtual auto accept(::beman::net29::detail::context_base::accept_operation*) -> bool = 0;
+    virtual auto connect(::beman::net29::detail::context_base::connect_operation*) -> bool = 0;
+    virtual auto receive(::beman::net29::detail::context_base::receive_operation*) -> bool = 0;
+    virtual auto send(::beman::net29::detail::context_base::send_operation*) -> bool = 0;
+    virtual auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> bool = 0;
+    virtual auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> bool = 0;
 };
 
 // ----------------------------------------------------------------------------
