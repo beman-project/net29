@@ -22,6 +22,7 @@
 #include <beman/net29/detail/poll_context.hpp>
 #include <beman/net29/detail/sender.hpp>
 #include <beman/net29/detail/socket_base.hpp>
+#include <beman/net29/detail/timer.hpp>
 
 // ----------------------------------------------------------------------------
 
