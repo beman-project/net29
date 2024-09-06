@@ -5,12 +5,13 @@
 #include <string_view>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
-//#include <example_scope.hpp>
-//#include <example_task.hpp>
+#include "demo_scope.hpp"
+#include "demo_task.hpp"
 
 namespace ex  = ::beman::execution26;
 namespace net = ::beman::net29;
 
+auto use(auto&&) -> void {}
 
 #if 0
 template <typename E>
@@ -71,6 +72,8 @@ struct receiver
     }
 };
 
+struct error { int value{}; };
+
 int main()
 {
     std::cout << std::unitbuf;
@@ -78,6 +81,27 @@ int main()
 
     try
     {
+        std::cout << std::unitbuf;
+        std::cout << "coroutine\n";
+        auto t = []()-> demo::task<>
+        {
+            int i = co_await ex::just(17);
+            std::cout << "i=" << i << "\n";
+            auto[a, b] = co_await ex::just("hello", "world");
+            std::cout << "a=" << a << ", b=" << b << "\n";
+            try
+            {
+                co_await ex::just(error{17});
+            }
+            catch (error const& e)
+            {
+                std::cout << "error=" << e.value << "\n";
+            }
+        }();
+        t.run();
+        use(t);
+        return 0;
+
         //exec::async_scope         scope;
         net::io_context        context;
         net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
@@ -86,6 +110,7 @@ int main()
         auto state{ex::connect(net::async_accept(acceptor), receiver{})};
         ex::start(state);
         context.run();
+
 #if 0
         auto[stream, ep] = *ex::sync_wait(net::async_accept(acceptor));
         std::cout << "sync completed\n";
