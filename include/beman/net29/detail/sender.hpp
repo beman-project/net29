@@ -158,7 +158,7 @@ struct beman::net29::detail::sender_state
             this->cancel();
             return;
         }
-        if (!this->d_data.submit(this))
+        if (this->d_data.submit(this) == ::beman::net29::detail::submit_result::ready)
         {
             this->complete();
         }

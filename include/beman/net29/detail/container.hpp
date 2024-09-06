@@ -58,6 +58,7 @@ inline auto beman::net29::detail::container<Record>::erase(::beman::net29::detai
 template <typename Record>
 inline auto beman::net29::detail::container<Record>::operator[](::beman::net29::detail::socket_id id) -> Record&
 {
+    assert(this->records[::std::size_t(id)].index() == 1u);
     return ::std::get<1>(this->records[::std::size_t(id)]);
 }
 

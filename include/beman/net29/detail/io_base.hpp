@@ -7,13 +7,34 @@
 #include <beman/net29/detail/netfwd.hpp>
 #include <memory>
 #include <system_error>
+#include <ostream>
 
 // ----------------------------------------------------------------------------
 
 namespace beman::net29::detail
 {
+    enum class submit_result { ready, submit, error };
+    auto  operator<< (::std::ostream&,
+                      ::beman::net29::detail::submit_result) -> ::std::ostream&;
+
     struct io_base;
     template <typename> struct io_operation;
+}
+
+// ----------------------------------------------------------------------------
+
+inline auto beman::net29::detail::operator<< (
+    ::std::ostream& out,
+    ::beman::net29::detail::submit_result result) -> ::std::ostream&
+{
+    switch (result)
+    {
+    case ::beman::net29::detail::submit_result::ready:  return out << "ready";
+    case ::beman::net29::detail::submit_result::submit: return out << "submit";
+    case ::beman::net29::detail::submit_result::error:  return out << "error";
+
+    }
+    return out << "<unknown>";
 }
 
 // ----------------------------------------------------------------------------
@@ -24,13 +45,15 @@ namespace beman::net29::detail
 struct beman::net29::detail::io_base
 {
     using extra_t = ::std::unique_ptr<void, auto(*)(void*)->void>;
+    using work_t  = auto(*)(::beman::net29::detail::context_base&, io_base*)
+        -> ::beman::net29::detail::submit_result;
 
-    io_base*                         next{nullptr}; // used for an intrusive list
+    io_base*                              next{nullptr}; // used for an intrusive list
     ::beman::net29::detail::context_base* context{nullptr};
     ::beman::net29::detail::socket_id     id;            // the entity affected
-    int                               event;         // mask for expected events
-    auto                            (*work)(::beman::net29::detail::context_base&, io_base*) -> bool = nullptr;
-    extra_t                          extra{nullptr, +[](void*){}};
+    int                                   event;         // mask for expected events
+    work_t                                work;
+    extra_t                               extra{nullptr, +[](void*){}};
 
     io_base(::beman::net29::detail::socket_id id, int event): id(id), event(event) {}
 

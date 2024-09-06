@@ -54,6 +54,23 @@ auto make_client(exec::async_scope& scope, auto client) -> exec::task<void>
 }
 #endif
 
+struct receiver
+{
+    using receiver_concept = ex::receiver_t;
+    auto set_value(auto&&, auto&& ep) && noexcept -> void
+    {
+        std::cout << "ep=" << ep << "\n";
+    }
+    auto set_error(auto&& error) && noexcept -> void
+    {
+        std::cout << "error=" << error << "\n";
+    }
+    auto set_stopped() && noexcept -> void
+    {
+        std::cout << "cancelled\n";
+    }
+};
+
 int main()
 {
     std::cout << std::unitbuf;
@@ -66,15 +83,15 @@ int main()
         net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
         net::ip::tcp::acceptor acceptor(context, endpoint);
 
-        auto s = net::async_accept(acceptor);
-        auto s1 = net::async_accept(ex::just(), acceptor);
-        static_assert(ex::sender<decltype(s)>);
-        static_assert(ex::sender<decltype(s1)>);
-        static_assert(ex::sender_in<decltype(s)>);
-        static_assert(ex::sender_in<decltype(s1)>);
-        //static_assert(std::same_as<void, ex::value_types_of_t<decltype(s), ex::empty_env>>);
-        //static_assert(std::same_as<void, decltype(ex::get_completion_signatures(s, ex::empty_env{}))>);
-        ex::sync_wait(std::move(s));
+        auto state{ex::connect(net::async_accept(acceptor), receiver{})};
+        ex::start(state);
+        context.run();
+#if 0
+        auto[stream, ep] = *ex::sync_wait(net::async_accept(acceptor));
+        std::cout << "sync completed\n";
+        std::cout << "ep=" << ep << "\n";
+        std::cout << "print completed\n";
+#endif
 #if 0
 
         std::cout << "spawning accept\n";

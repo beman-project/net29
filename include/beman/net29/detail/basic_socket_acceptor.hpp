@@ -31,8 +31,8 @@ public:
     using socket_type        = typename protocol_type::socket;
 
 private:
-    ::beman::net29::io_context&         d_context;
-    protocol_type                 d_protocol; 
+    ::beman::net29::io_context&       d_context;
+    protocol_type                     d_protocol; 
     ::beman::net29::detail::socket_id d_id{};
 
 private:
@@ -76,11 +76,9 @@ public:
     basic_socket_acceptor(::beman::net29::basic_socket_acceptor<OtherProtocol>&&);
     ~basic_socket_acceptor()
     {
-        if (this->d_id != ::beman::net29::detail::socket_id::invalid)
-        {
-            ::std::error_code error{};
-            this->close(error);
-        }
+        //-dk:TODO assert that there is no outstanding work?
+        ::std::error_code error{};
+        this->close(error);
     }
     basic_socket_acceptor& operator=(basic_socket_acceptor const&) = delete;
     basic_socket_acceptor& operator=(basic_socket_acceptor&&);
@@ -123,7 +121,8 @@ public:
         if (this->is_open())
         {
             this->d_context.release(this->id(), error);
-            }
+            this->d_id = ::beman::net29::detail::socket_id::invalid;
+        }
     }
     void cancel();
     void cancel(::std::error_code&);

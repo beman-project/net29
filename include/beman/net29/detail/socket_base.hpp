@@ -14,20 +14,20 @@
 class beman::net29::socket_base
 {
 public:
-    template <typename _Value_t, int _Level, int _Name>
-    class _Socket_option
+    template <typename Value, int Level, int Name>
+    class socket_option
     {
     private:
-        _Value_t _D_value;
+        Value d_value;
     
     public:
-        explicit _Socket_option(_Value_t _V): _D_value(_V) {}
-        _Value_t _Value() const { return this->_D_value; }
-        template <typename _Protocol> auto data(_Protocol&&) const -> _Value_t const* { return &this->_D_value; }
-        template <typename _Protocol> auto data(_Protocol&&)       -> _Value_t const* { return &this->_D_value; }
-        template <typename _Protocol> constexpr auto level(_Protocol&&) const -> int { return _Level; }
-        template <typename _Protocol> constexpr auto name(_Protocol&&) const -> int { return _Name; }
-        template <typename _Protocol> constexpr auto size(_Protocol&&) const -> ::socklen_t { return sizeof(_Value_t); }
+        explicit socket_option(Value v): d_value(v) {}
+        Value value() const { return this->d_value; }
+        template <typename Protocol> auto data(Protocol&&) const -> Value const* { return &this->d_value; }
+        template <typename Protocol> auto data(Protocol&&)       -> Value const* { return &this->d_value; }
+        template <typename Protocol> constexpr auto level(Protocol&&) const -> int { return Level; }
+        template <typename Protocol> constexpr auto name(Protocol&&) const -> int { return Name; }
+        template <typename Protocol> constexpr auto size(Protocol&&) const -> ::socklen_t { return sizeof(Value); }
     };
     class broadcast;
     class debug;
@@ -38,11 +38,11 @@ public:
     class receive_buffer_size;
     class receive_low_watermark;
     class reuse_address
-        : public _Socket_option<int, SOL_SOCKET, SO_REUSEADDR>
+        : public socket_option<int, SOL_SOCKET, SO_REUSEADDR>
     {
     public:
-        explicit reuse_address(bool _Value): _Socket_option(_Value) {}
-        explicit operator bool() const { return this->_Value(); }
+        explicit reuse_address(bool value): socket_option(value) {}
+        explicit operator bool() const { return this->value(); }
     };
     class send_buffer_size;
     class send_low_watermark;

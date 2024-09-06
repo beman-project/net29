@@ -144,17 +144,19 @@ struct beman::net29::detail::poll_context final
         //-dk:TODO wake-up polling thread
     }
 
-    auto add_Outstanding(::beman::net29::detail::io_base* completion) -> bool
+    auto add_outstanding(::beman::net29::detail::io_base* completion)
+        -> ::beman::net29::detail::submit_result
     {
         auto id{completion->id};
-        if (this->d_sockets[id].blocking || !completion->work(*this, completion))
+        if (this->d_sockets[id].blocking
+            || completion->work(*this, completion) == ::beman::net29::detail::submit_result::submit)
         {
             this->d_poll.emplace_back(::pollfd{this->native_handle(id), short(completion->event), short()});
             this->d_outstanding.emplace_back(completion);
             this->wakeup();
-            return false;
+            return ::beman::net29::detail::submit_result::submit;
         }
-        return true;
+        return ::beman::net29::detail::submit_result::ready;
     }
 
     auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void override final
@@ -162,10 +164,11 @@ struct beman::net29::detail::poll_context final
         //-dk:TODO
     }
     auto accept(::beman::net29::detail::context_base::accept_operation* completion)
-        -> bool override final
+        -> ::beman::net29::detail::submit_result override final
     {
         completion->work =
-            [](::beman::net29::detail::context_base& ctxt, ::beman::net29::detail::io_base* comp)
+            [](::beman::net29::detail::context_base& ctxt,
+               ::beman::net29::detail::io_base* comp)
             {
                 auto id{comp->id};
                 auto& completion(*static_cast<accept_operation*>(comp));
@@ -177,7 +180,7 @@ struct beman::net29::detail::poll_context final
                     {
                         ::std::get<2>(completion) =  ctxt.make_socket(rc);
                         completion.complete();
-                        return true;
+                        return ::beman::net29::detail::submit_result::ready;
                     }
                     else
                     {
@@ -185,26 +188,26 @@ struct beman::net29::detail::poll_context final
                         {
                         default:
                             completion.error(::std::error_code(errno, ::std::system_category()));
-                            return true;
+                            return ::beman::net29::detail::submit_result::error;
                         case EINTR:
                             break;
                         case EWOULDBLOCK:
-                            return false;
+                            return ::beman::net29::detail::submit_result::submit;
                         }
                     }
                 }
             };
-        return this->add_Outstanding(completion);
+        return this->add_outstanding(completion);
     }
-    auto connect(::beman::net29::detail::context_base::connect_operation*) -> bool override { return {}; /*-dk:TODO*/ } 
-    auto receive(::beman::net29::detail::context_base::receive_operation*) -> bool override { return {}; /*-dk:TODO*/ }
-    auto send(::beman::net29::detail::context_base::send_operation*) -> bool override { return {}; /*-dk:TODO*/ }
-    auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> bool override
+    auto connect(::beman::net29::detail::context_base::connect_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ } 
+    auto receive(::beman::net29::detail::context_base::receive_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ }
+    auto send(::beman::net29::detail::context_base::send_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ }
+    auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> ::beman::net29::detail::submit_result override
     {
         //-dk:TODO
         return {};
     }
-    auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> bool override
+    auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> ::beman::net29::detail::submit_result override
     {
         //-dk:TODO
         return {};

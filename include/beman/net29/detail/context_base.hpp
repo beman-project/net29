@@ -57,12 +57,18 @@ struct beman::net29::detail::context_base
     virtual auto run_one() -> ::std::size_t = 0;
 
     virtual auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void = 0;
-    virtual auto accept(::beman::net29::detail::context_base::accept_operation*) -> bool = 0;
-    virtual auto connect(::beman::net29::detail::context_base::connect_operation*) -> bool = 0;
-    virtual auto receive(::beman::net29::detail::context_base::receive_operation*) -> bool = 0;
-    virtual auto send(::beman::net29::detail::context_base::send_operation*) -> bool = 0;
-    virtual auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> bool = 0;
-    virtual auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> bool = 0;
+    virtual auto accept(::beman::net29::detail::context_base::accept_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
+    virtual auto connect(::beman::net29::detail::context_base::connect_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
+    virtual auto receive(::beman::net29::detail::context_base::receive_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
+    virtual auto send(::beman::net29::detail::context_base::send_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
+    virtual auto resume_after(::beman::net29::detail::context_base::resume_after_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
+    virtual auto resume_at(::beman::net29::detail::context_base::resume_at_operation*)
+        -> ::beman::net29::detail::submit_result = 0;
 };
 
 // ----------------------------------------------------------------------------

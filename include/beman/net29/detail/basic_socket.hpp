@@ -22,10 +22,9 @@ public:
     using protocol_type      = Protocol;
 
 private:
-    static constexpr ::beman::net29::detail::socket_id s_unused{0xffff'ffff};
     ::beman::net29::detail::context_base* d_context;
     protocol_type                     d_protocol{::beman::net29::ip::tcp::v6()}; 
-    ::beman::net29::detail::socket_id     d_id{s_unused};
+    ::beman::net29::detail::socket_id     d_id{::beman::net29::detail::socket_id::invalid};
 
 public:
     basic_socket()
@@ -40,12 +39,12 @@ public:
     basic_socket(basic_socket&& other)
         : d_context(other.d_context)
         , d_protocol(other.d_protocol)
-        , d_id(::std::exchange(other.d_id, s_unused))
+        , d_id(::std::exchange(other.d_id, ::beman::net29::detail::socket_id::invalid))
     {
     }
     ~basic_socket()
     {
-        if (this->d_id != s_unused)
+        if (this->d_id != ::beman::net29::detail::socket_id::invalid)
         {
             ::std::error_code error{};
             this->d_context->release(this->d_id, error);

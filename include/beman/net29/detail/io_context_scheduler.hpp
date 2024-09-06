@@ -36,27 +36,33 @@ public:
     {
         this->d_context->cancel(cancel_op, op);
     }
-    auto accept(::beman::net29::detail::context_base::accept_operation* op) -> bool
+    auto accept(::beman::net29::detail::context_base::accept_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->accept(op);
     }
-    auto connect(::beman::net29::detail::context_base::connect_operation* op) -> bool
+    auto connect(::beman::net29::detail::context_base::connect_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->connect(op);
     }
-    auto receive(::beman::net29::detail::context_base::receive_operation* op) -> bool
+    auto receive(::beman::net29::detail::context_base::receive_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->receive(op);
     }
-    auto send(::beman::net29::detail::context_base::send_operation* op) -> bool
+    auto send(::beman::net29::detail::context_base::send_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->send(op);
     }
-    auto resume_after(::beman::net29::detail::context_base::resume_after_operation* op) -> bool
+    auto resume_after(::beman::net29::detail::context_base::resume_after_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->resume_after(op);
     }
-    auto resume_at(::beman::net29::detail::context_base::resume_at_operation* op) -> bool
+    auto resume_at(::beman::net29::detail::context_base::resume_at_operation* op)
+        -> ::beman::net29::detail::submit_result
     {
         return this->d_context->resume_at(op);
     }

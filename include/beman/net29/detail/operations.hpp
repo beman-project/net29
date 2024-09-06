@@ -47,6 +47,8 @@ namespace beman::net29
     inline constexpr async_receive_from_t async_receive_from{};
 }
 
+// ----------------------------------------------------------------------------
+
 struct beman::net29::detail::accept_desc
 {
     using operation = ::beman::net29::detail::context_base::accept_operation;
@@ -74,10 +76,10 @@ struct beman::net29::detail::accept_desc
                                            ::std::move(*::std::get<2>(o))),
                                  typename socket_t::endpoint_type(::std::get<0>(o)));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<1>(*base) = sizeof(::std::get<0>(*base));
-            return this->d_acceptor.get_scheduler().accept(base);
+            return this->get_scheduler().accept(base);
         }
     };
 };
@@ -99,7 +101,7 @@ struct beman::net29::detail::connect_desc
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<0>(*base) = this->d_socket.get_endpoint();
             return this->d_socket.get_scheduler().connect(base);
@@ -126,7 +128,7 @@ struct beman::net29::detail::send_desc
             ::beman::net29::detail::ex::set_value(::std::move(receiver),
                                  ::std::move(::std::get<2>(o)));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<0>(*base).msg_iov    = this->d_buffers.data();
             ::std::get<0>(*base).msg_iovlen = this->d_buffers.size();
@@ -154,7 +156,7 @@ struct beman::net29::detail::send_to_desc
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver), ::std::get<2>(o));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<0>(*base).msg_iov     = this->d_buffers.data();
             ::std::get<0>(*base).msg_iovlen  = this->d_buffers.size();
@@ -183,7 +185,7 @@ struct beman::net29::detail::receive_desc
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver), ::std::get<2>(o));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<0>(*base).msg_iov    = this->d_buffers.data();
             ::std::get<0>(*base).msg_iovlen = this->d_buffers.size();
@@ -211,7 +213,7 @@ struct beman::net29::detail::receive_from_desc
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver), ::std::get<2>(o));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
             ::std::get<0>(*base).msg_iov     = this->d_buffers.data();
             ::std::get<0>(*base).msg_iovlen  = this->d_buffers.size();
