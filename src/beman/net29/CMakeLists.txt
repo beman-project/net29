@@ -20,7 +20,25 @@ target_sources(${TARGET_LIBRARY}
     FILE_SET ${TARGET_LIBRARY}_detail_headers TYPE HEADERS
     BASE_DIRS ${PROJECT_SOURCE_DIR}/include
     FILES
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/basic_socket.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/basic_socket_acceptor.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/basic_stream_socket.hpp
     ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/buffer.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/container.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/context_base.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/endpoint.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/execution.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/internet.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/io_base.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/io_context.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/io_context_scheduler.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/netfwd.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/operations.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/poll_context.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/sender.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/socket_base.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/socket_category.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/timer.hpp
 )
 get_property(DETAIL_HEADER_FILES TARGET ${TARGET_LIBRARY} PROPERTY HEADER_SET_${TARGET_LIBRARY}_detail_headers)
 source_group("Header Files\\detail" FILES ${DETAIL_HEADER_FILES})
