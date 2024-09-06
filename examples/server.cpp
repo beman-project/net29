@@ -5,10 +5,14 @@
 #include <string_view>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
-#if 0
-#include <example_scope.hpp>
-#include <example_task.hpp>
+//#include <example_scope.hpp>
+//#include <example_task.hpp>
 
+namespace ex  = ::beman::execution26;
+namespace net = ::beman::net29;
+
+
+#if 0
 template <typename E>
 struct error_handler_base
 {
@@ -28,7 +32,7 @@ auto make_client(exec::async_scope& scope, auto client) -> exec::task<void>
     try
     {
         char buffer[8];
-        while (auto size = co_await stdnet::async_receive(client, ::stdnet::buffer(buffer)))
+        while (auto size = co_await net::async_receive(client, net::buffer(buffer)))
         {
             std::string_view message(+buffer, size);
             std::cout << "received<" << size << ">(" << message << ")\n";
@@ -37,7 +41,7 @@ auto make_client(exec::async_scope& scope, auto client) -> exec::task<void>
                 std::cout << "exiting\n";
                 scope.get_stop_source().request_stop();
             }
-            auto ssize = co_await stdnet::async_send(client, ::stdnet::mutable_buffer(buffer, size));
+            auto ssize = co_await net::async_send(client, net::mutable_buffer(buffer, size));
             std::cout << "sent<ssize>(" << ::std::string_view(buffer, ssize) << ")\n";
         }
         std::cout << "client done\n";
@@ -54,26 +58,30 @@ int main()
 {
     std::cout << std::unitbuf;
     std::cout << "example server\n";
-#if 0
+
     try
     {
-        exec::async_scope         scope;
-        stdnet::io_context        context;
-        stdnet::ip::tcp::endpoint endpoint(stdnet::ip::address_v4::any(), 12345);
-        stdnet::ip::tcp::acceptor acceptor(context, endpoint);
+        //exec::async_scope         scope;
+        net::io_context        context;
+        net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
+        net::ip::tcp::acceptor acceptor(context, endpoint);
 
-        //tag_invoke(::stdnet::async_accept, acceptor);
-        auto s = stdnet::async_accept(acceptor);
-        auto s1 = stdnet::async_accept(::stdexec::just(), acceptor);
-        //auto s2 = stdexec::just() | stdnet::async_accept(acceptor);
-        static_assert(::stdexec::sender<decltype(s)>);
-        static_assert(::stdexec::sender<decltype(s1)>);
+        auto s = net::async_accept(acceptor);
+        auto s1 = net::async_accept(ex::just(), acceptor);
+        static_assert(ex::sender<decltype(s)>);
+        static_assert(ex::sender<decltype(s1)>);
+        static_assert(ex::sender_in<decltype(s)>);
+        static_assert(ex::sender_in<decltype(s1)>);
+        //static_assert(std::same_as<void, ex::value_types_of_t<decltype(s), ex::empty_env>>);
+        //static_assert(std::same_as<void, decltype(ex::get_completion_signatures(s, ex::empty_env{}))>);
+        ex::sync_wait(std::move(s));
+#if 0
 
         std::cout << "spawning accept\n";
         scope.spawn(std::invoke([](auto& scope, auto& acceptor)->exec::task<void>{
             while (true)
             {
-                auto[stream, endpoint] = co_await stdnet::async_accept(acceptor);
+                auto[stream, endpoint] = co_await net::async_accept(acceptor);
                 scope.spawn(
                     make_client(scope, std::move(stream))
                     | stdexec::upon_stopped([]{ std::cout << "client cancelled\n"; })
@@ -88,9 +96,9 @@ int main()
             using namespace std::chrono_literals;
             for (int i{}; i < 100; ++i)
             {
-                co_await stdnet::async_resume_after(scheduler, 1'000'000us);
+                co_await net::async_resume_after(scheduler, 1'000'000us);
                 std::cout << "relative timer fired\n";
-                co_await stdnet::async_resume_at(scheduler, ::std::chrono::system_clock::now() + 1s);
+                co_await net::async_resume_at(scheduler, ::std::chrono::system_clock::now() + 1s);
                 std::cout << "absolute timer fired\n";
             }
         }, context.get_scheduler()));
@@ -98,11 +106,11 @@ int main()
         std::cout << "running context\n";
         context.run();
         std::cout << "running done\n";
+#endif
     }
     catch (std::exception const& ex)
     {
         std::cout << "EXCEPTION: " << ex.what() << "\n";
         abort();
     }
-#endif
 }

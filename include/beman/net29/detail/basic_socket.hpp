@@ -13,49 +13,49 @@
 
 // ----------------------------------------------------------------------------
 
-template <typename _Protocol>
+template <typename Protocol>
 class beman::net29::basic_socket
     : public ::beman::net29::socket_base
 {
 public:
     using scheduler_type     = ::beman::net29::detail::io_context_scheduler;
-    using protocol_type      = _Protocol;
+    using protocol_type      = Protocol;
 
 private:
-    static constexpr ::beman::net29::detail::socket_id _S_unused{0xffff'ffff};
-    ::beman::net29::detail::context_base* _D_context;
-    protocol_type                     _D_protocol{::beman::net29::ip::tcp::v6()}; 
-    ::beman::net29::detail::socket_id     _D_id{_S_unused};
+    static constexpr ::beman::net29::detail::socket_id s_unused{0xffff'ffff};
+    ::beman::net29::detail::context_base* d_context;
+    protocol_type                     d_protocol{::beman::net29::ip::tcp::v6()}; 
+    ::beman::net29::detail::socket_id     d_id{s_unused};
 
 public:
     basic_socket()
-        : _D_context(nullptr)
+        : d_context(nullptr)
     {
     }
-    basic_socket(::beman::net29::detail::context_base* context, ::beman::net29::detail::socket_id _Id)
-        : _D_context(context)
-        , _D_id(_Id)
+    basic_socket(::beman::net29::detail::context_base* context, ::beman::net29::detail::socket_id id)
+        : d_context(context)
+        , d_id(id)
     {
     }
-    basic_socket(basic_socket&& _Other)
-        : _D_context(_Other._D_context)
-        , _D_protocol(_Other._D_protocol)
-        , _D_id(::std::exchange(_Other._D_id, _S_unused))
+    basic_socket(basic_socket&& other)
+        : d_context(other.d_context)
+        , d_protocol(other.d_protocol)
+        , d_id(::std::exchange(other.d_id, s_unused))
     {
     }
     ~basic_socket()
     {
-        if (this->_D_id != _S_unused)
+        if (this->d_id != s_unused)
         {
-            ::std::error_code _Error{};
-            this->_D_context->_Release(this->_D_id, _Error);
+            ::std::error_code error{};
+            this->d_context->release(this->d_id, error);
         }
     }
     auto get_scheduler() noexcept -> scheduler_type
     {
-        return scheduler_type{this->_D_context};
+        return scheduler_type{this->d_context};
     }
-    auto _Id() const -> ::beman::net29::detail::socket_id { return this->_D_id; }
+    auto id() const -> ::beman::net29::detail::socket_id { return this->d_id; }
 };
 
 

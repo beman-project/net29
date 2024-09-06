@@ -78,9 +78,11 @@ template <typename Desc, typename Data,
           ::beman::net29::detail::ex::receiver Receiver,
           ::beman::net29::detail::ex::sender UpstreamSender>
 struct beman::net29::detail::sender_state
-    : Desc::Operation
+    : Desc::operation
     , ::beman::net29::detail::sender_state_base<Receiver>
 {
+    using operation_state_concept = ::beman::net29::detail::ex::operation_state_t;
+
     struct cancel_callback
         : ::beman::net29::detail::io_base
     {
@@ -134,7 +136,7 @@ struct beman::net29::detail::sender_state
 
     template <typename D, ::beman::net29::detail::ex::receiver R>
     sender_state(D&& d, R&& r, UpstreamSender up)
-        : Desc::Operation(d.id(), d.events())
+        : Desc::operation(d.id(), d.events())
         , sender_state_base<Receiver>(::std::forward<R>(r))
         , d_data(::std::forward<D>(d))
         , d_state(::beman::net29::detail::ex::connect(
@@ -166,9 +168,7 @@ struct beman::net29::detail::sender_state
         d_callback.reset();
         if (0 == --this->d_outstanding)
         {
-            ::beman::net29::detail::ex::set_value(
-                ::std::move(this->d_receiver)
-            );
+            this->d_data.set_value(*this, ::std::move(this->d_receiver));
         }
     }
     auto error(::std::error_code err) -> void override final
@@ -192,7 +192,7 @@ struct beman::net29::detail::sender_state
 };
 
 template <typename Desc, typename Data, ::beman::net29::detail::ex::sender Upstream>
-struct sender
+struct beman::net29::detail::sender
 {
     using sender_concept = ::beman::net29::detail::ex::sender_t;
     using completion_signatures
@@ -244,9 +244,11 @@ struct beman::net29::detail::sender_cpo
     template <::beman::net29::detail::ex::sender Upstream, typename... Args>
     auto operator()(Upstream&& u, Args&&... args) const
     {
-        return Desc::make_sender(
-            ::std::forward<Upstream>(u), ::std::forward<Args>(args)...
-            );
+        using data = Desc::template data<Args...>;
+        return ::beman::net29::detail::sender<Desc, data, ::std::remove_cvref_t<Upstream>>{
+            data{::std::forward<Args>(args)...},
+            ::std::forward<Upstream>(u)
+        };
     }
 };
 

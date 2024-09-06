@@ -21,7 +21,7 @@ namespace beman::net29::detail
     struct receive_from_desc;
 }
 
-namespace beman::net29::detail
+namespace beman::net29
 {
     using async_accept_t
         = ::beman::net29::detail::sender_cpo<::beman::net29::detail::accept_desc>;
