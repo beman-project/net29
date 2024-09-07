@@ -72,6 +72,7 @@ struct receiver
     }
 };
 
+struct result { int value{}; };
 struct error { int value{}; };
 
 int main()
@@ -83,7 +84,7 @@ int main()
     {
         std::cout << std::unitbuf;
         std::cout << "coroutine\n";
-        auto t = []()-> demo::task<>
+        auto t = []()-> demo::task<result>
         {
             int i = co_await ex::just(17);
             std::cout << "i=" << i << "\n";
@@ -97,9 +98,26 @@ int main()
             {
                 std::cout << "error=" << e.value << "\n";
             }
+            co_return result{17};
         }();
-        t.run();
-        use(t);
+        try
+        {
+            auto r{ex::sync_wait(::std::move(t))};
+            if (r)
+            {
+                auto[res] = *r;
+                std::cout << "after coroutine: r=" << res.value << "\n";
+            }
+            else
+            {
+                std::cout << "after coroutine: cancelled\n";
+            }
+        }
+        catch(std::exception const& e)
+        {
+            ::std::cout << "after coroutine: error\n";
+        }
+        
         return 0;
 
         //exec::async_scope         scope;
