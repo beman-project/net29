@@ -145,7 +145,7 @@ namespace demo
             {
                 if (this->error)
                     std::rethrow_exception(this->error);
-                return *this->result;
+                return ::std::move(*this->result);
             }
         };
 

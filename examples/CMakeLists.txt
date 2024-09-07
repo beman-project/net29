@@ -13,8 +13,8 @@ set(LIBRARIES
 include(GNUInstallDirs)
 
 set(EXAMPLES
-  task
   server
+  task
 )
 
 foreach(EXAMPLE ${EXAMPLES})

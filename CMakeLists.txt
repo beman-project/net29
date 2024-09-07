@@ -16,8 +16,9 @@ set(TARGETS_EXPORT_NAME ${CMAKE_PROJECT_NAME}Targets)
 include(FetchContent)
 FetchContent_Declare(
     execution26
-    GIT_REPOSITORY git@github.com:beman-project/execution26.git
-    GIT_TAG 9703ca8
+    #GIT_REPOSITORY git@github.com:beman-project/execution26.git
+    SOURCE_DIR /Users/kuehl/src/execution26
+    GIT_TAG f9f5523
 )
 FetchContent_MakeAvailable(execution26)
 

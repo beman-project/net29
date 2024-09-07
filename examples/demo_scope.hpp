@@ -6,6 +6,7 @@
 
 #include <beman/net29/net.hpp>
 #include <atomic>
+#include <iostream>
 #include <utility>
 
 // ----------------------------------------------------------------------------
@@ -35,12 +36,19 @@ namespace demo
             scope*    self;
             job_base* state{};
 
+            auto set_error(auto&&) noexcept -> void
+            {
+                ::std::cerr << "ERROR: job in scope completed with error!\n";
+                this->complete();
+            }
             auto set_value() && noexcept -> void
             {
+                ::std::cerr << "set_value";
                 this->complete();
             }
             auto set_stopped() && noexcept -> void
             {
+                ::std::cerr << "set_value";
                 this->complete();
             }
             auto complete() -> void
@@ -59,10 +67,11 @@ namespace demo
         struct job
             : job_base
         {
-            using state_t = decltype(ex::connect(std::declval<Sender>(), std::declval<receiver>()));
+            using state_t = decltype(ex::connect(std::declval<Sender&&>(), std::declval<receiver>()));
             state_t state;
-            job(scope* self, Sender&& sender)
-                : state(::std::forward<Sender>(sender), receiver{self, this})
+            template <typename S>
+            job(scope* self, S&& sender)
+                : state(::std::forward<S>(sender), receiver{self, this})
             {
                 ex::start(this->state);
             }
