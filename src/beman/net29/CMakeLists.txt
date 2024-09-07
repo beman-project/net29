@@ -38,6 +38,7 @@ target_sources(${TARGET_LIBRARY}
     ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/sender.hpp
     ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/socket_base.hpp
     ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/socket_category.hpp
+    ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/stop_token.hpp
     ${PROJECT_SOURCE_DIR}/include/beman/net29/detail/timer.hpp
 )
 get_property(DETAIL_HEADER_FILES TARGET ${TARGET_LIBRARY} PROPERTY HEADER_SET_${TARGET_LIBRARY}_detail_headers)

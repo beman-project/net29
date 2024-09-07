@@ -156,7 +156,6 @@ namespace demo
             }
             auto unhandled_exception() -> void
             {
-                ::std::cout << "unhandled_exception\n";
                 this->state->complete_error(::std::current_exception());
             }
             auto await_transform(ex::sender auto && sender)

@@ -76,70 +76,37 @@ struct receiver
 struct result { int value{}; };
 struct error { int value{}; };
 
-int main(int ac, char*[])
+int main()
 {
     std::cout << std::unitbuf;
     std::cout << "example server\n";
 
     try
     {
-        std::cout << std::unitbuf;
-        std::cout << "coroutine\n";
-        auto t{::std::invoke([](int ac)-> demo::task<result>
-        {
-            int i = co_await ex::just(17);
-            std::cout << "i=" << i << "\n";
-            auto[a, b] = co_await ex::just("hello", "world");
-            std::cout << "a=" << a << ", b=" << b << "\n";
-            try
-            {
-                co_await ex::just_error(error{17});
-            }
-            catch (error const& e)
-            {
-                std::cout << "error=" << e.value << "\n";
-            }
-            if (ac == 2)
-                co_await ex::just_stopped();
-            if (ac == 3)
-                throw error{42};
-            co_return result{17};
-        }, ac)};
-        try
-        {
-            auto r{ex::sync_wait(::std::move(t))};
-            if (r)
-            {
-                auto[res] = *r;
-                std::cout << "after coroutine: r=" << res.value << "\n";
-            }
-            else
-            {
-                std::cout << "after coroutine: cancelled\n";
-            }
-        }
-        catch(error const& e)
-        {
-            ::std::cout << "after coroutine: error=" << e.value << "\n";
-        }
-        catch(std::exception const& e)
-        {
-            ::std::cout << "after coroutine: exception=" << e.what() << "\n";
-        }
-        catch(...)
-        {
-            ::std::cout << "after coroutine: unknown exception\n";
-        }
-        
-        return 0;
-
-        //exec::async_scope         scope;
+        demo::scope            scope;
         net::io_context        context;
         net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
         net::ip::tcp::acceptor acceptor(context, endpoint);
 
-        auto state{ex::connect(net::async_accept(acceptor), receiver{})};
-        ex::start(state);
+        auto s{
+            net::async_accept(acceptor)
+            //| ex::then([](auto&&, auto&&){})
+            //| ex::upon_error([](auto&&){})
+            | ex::upon_stopped([](auto&&){})
+        };
+        using comp = decltype(ex::get_completion_signatures(s, ex::empty_env()));
+        static_assert(std::same_as<
+            ex::completion_signatures<ex::set_value_t()>,
+            comp
+        >);
+#if 0
+        scope.spawn(
+            net::async_accept(acceptor)
+            | ex::then([](auto&&, auto&&){})
+            | ex::upon_error([](auto&&){})
+            | ex::upon_stopped([](){})
+            );
+#endif
         context.run();
 
 #if 0
