@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <iostream>
 
 // ----------------------------------------------------------------------------
 
@@ -207,17 +208,20 @@ struct beman::net29::detail::poll_context final
         auto const& endpoint(::std::get<0>(*op));
         if (-1 == ::fcntl(handle, F_SETFL, O_NONBLOCK))
         {
+            std::cout << "error: fcntl\n";
             op->error(::std::error_code(errno, ::std::system_category()));
             return ::beman::net29::detail::submit_result::error;
         }
         if (0 == ::connect(handle, endpoint.data(), endpoint.size()))
         {
+            std::cout << "connect: complete\n";
             op->complete();
             return ::beman::net29::detail::submit_result::ready;
         }
         switch (errno)
         {
         default:
+            std::cout << "connect: error\n";
             op->error(::std::error_code(errno, ::std::system_category()));
             return ::beman::net29::detail::submit_result::error;
         case EINPROGRESS:
@@ -230,28 +234,31 @@ struct beman::net29::detail::poll_context final
                       ::beman::net29::detail::io_base* op)
         {
             auto handle{ctxt.native_handle(op->id)};
+            std::cout << "connect: ready\n";
 
             int error{};
             ::socklen_t len{sizeof(error)};
             if (-1 == ::getsockopt(handle, SOL_SOCKET, SO_ERROR, &error, &len))
             {
+                std::cout << "getsockopt: error\n";
                 op->error(::std::error_code(errno, ::std::system_category()));
                 return ::beman::net29::detail::submit_result::error;
             }
             if (0 == error)
             {
+                std::cout << "getsockopt: complete\n";
                 op->complete();
                 return ::beman::net29::detail::submit_result::ready;
             }
             else
             {
+                std::cout << "getsockopt: errno\n";
                 op->error(::std::error_code(error, ::std::system_category()));
                 return ::beman::net29::detail::submit_result::error;
             }
         };
 
         return this->add_outstanding(op);
-        return ::beman::net29::detail::submit_result::submit;
     } 
     auto receive(::beman::net29::detail::context_base::receive_operation* op)
         -> ::beman::net29::detail::submit_result override
@@ -305,7 +312,6 @@ struct beman::net29::detail::poll_context final
                 auto rc{::sendmsg(ctxt.native_handle(op->id),
                                     &::std::get<0>(completion),
                                     ::std::get<1>(completion))};
-                std::cout << "send rc=" << rc << "\n";
                 if (0 <= rc)
                 {
                     ::std::get<2>(completion) = rc;

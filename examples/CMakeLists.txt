@@ -13,6 +13,7 @@ set(LIBRARIES
 include(GNUInstallDirs)
 
 set(EXAMPLES
+  client
   server
   task
 )

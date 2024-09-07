@@ -244,7 +244,7 @@ struct beman::net29::detail::sender_cpo
     template <::beman::net29::detail::ex::sender Upstream, typename... Args>
     auto operator()(Upstream&& u, Args&&... args) const
     {
-        using data = Desc::template data<Args...>;
+        using data = Desc::template data<::std::decay_t<Args>...>;
         return ::beman::net29::detail::sender<Desc, data, ::std::remove_cvref_t<Upstream>>{
             data{::std::forward<Args>(args)...},
             ::std::forward<Upstream>(u)
