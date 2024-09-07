@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <poll.h>
+#include <fcntl.h>
 
 // ----------------------------------------------------------------------------
 
@@ -199,7 +200,59 @@ struct beman::net29::detail::poll_context final
             };
         return this->add_outstanding(completion);
     }
-    auto connect(::beman::net29::detail::context_base::connect_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ } 
+    auto connect(::beman::net29::detail::context_base::connect_operation* op)
+        -> ::beman::net29::detail::submit_result override
+    {
+        auto handle{this->native_handle(op->id)};
+        auto const& endpoint(::std::get<0>(*op));
+        if (-1 == ::fcntl(handle, F_SETFL, O_NONBLOCK))
+        {
+            op->error(::std::error_code(errno, ::std::system_category()));
+            return ::beman::net29::detail::submit_result::error;
+        }
+        if (0 == ::connect(handle, endpoint.data(), endpoint.size()))
+        {
+            op->complete();
+            return ::beman::net29::detail::submit_result::ready;
+        }
+        switch (errno)
+        {
+        default:
+            op->error(::std::error_code(errno, ::std::system_category()));
+            return ::beman::net29::detail::submit_result::error;
+        case EINPROGRESS:
+        case EINTR:
+            break;
+        }
+
+        op->context = this;
+        op->work = [](::beman::net29::detail::context_base& ctxt,
+                      ::beman::net29::detail::io_base* op)
+        {
+            auto handle{ctxt.native_handle(op->id)};
+
+            int error{};
+            ::socklen_t len{sizeof(error)};
+            if (-1 == ::getsockopt(handle, SOL_SOCKET, SO_ERROR, &error, &len))
+            {
+                op->error(::std::error_code(errno, ::std::system_category()));
+                return ::beman::net29::detail::submit_result::error;
+            }
+            if (0 == error)
+            {
+                op->complete();
+                return ::beman::net29::detail::submit_result::ready;
+            }
+            else
+            {
+                op->error(::std::error_code(error, ::std::system_category()));
+                return ::beman::net29::detail::submit_result::error;
+            }
+        };
+
+        return this->add_outstanding(op);
+        return ::beman::net29::detail::submit_result::submit;
+    } 
     auto receive(::beman::net29::detail::context_base::receive_operation* op)
         -> ::beman::net29::detail::submit_result override
     {
