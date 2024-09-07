@@ -19,7 +19,7 @@ namespace beman::net29
 // ----------------------------------------------------------------------------
 
 template <typename AcceptableProtocol>
-class ::beman::net29::basic_socket_acceptor
+class beman::net29::basic_socket_acceptor
     : public ::beman::net29::socket_base
 {
 public:

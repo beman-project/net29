@@ -17,40 +17,79 @@ namespace demo
 {
     namespace ex = ::beman::net29::detail::ex;
 
+    template <typename T>
+    struct task_state_base
+    {
+        ::std::optional<T> result;
+        virtual auto complete_value() -> void = 0;
+        virtual auto complete_error(::std::exception_ptr) -> void = 0;
+        virtual auto complete_stopped() -> void = 0;
+
+        template <typename Receiver>
+        auto set_value(Receiver& receiver)
+        {
+            ::beman::net29::detail::ex::set_value(
+                ::std::move(receiver),
+                ::std::move(*this->result)
+             );
+        }
+    };
+    template <>
+    struct task_state_base<void>
+    {
+        virtual auto complete_value() -> void = 0;
+        virtual auto complete_error(::std::exception_ptr) -> void = 0;
+        virtual auto complete_stopped() -> void = 0;
+
+        template <typename Receiver>
+        auto set_value(Receiver& receiver)
+        {
+            ::beman::net29::detail::ex::set_value(::std::move(receiver));
+        }
+    };
+
+    struct task_none {};
+    template <typename... T> struct task_type_or_none;
+    template <typename T> struct task_type_or_none<T> { using type = T; };
+    template <> struct task_type_or_none<> { using type = task_none; };
+    template <typename... T> using task_type_or_none_t = typename task_type_or_none<T...>::type;
+
+    template <typename... T>
+    struct task_single_or_tuple { using type = ::std::tuple<::std::decay_t<T>...>; };
+    template <typename T>
+    struct task_single_or_tuple<T> { using type = ::std::decay_t<T>; };
+    template <typename... T>
+    using task_single_or_tuple_t = typename task_single_or_tuple<T...>::type;
+
+    template <typename R>
+    struct task_promise_result
+    {
+        task_state_base<R>* state{};
+        template <typename T>
+        auto return_value(T&& r) -> void
+        {
+            this->state->result.emplace(std::forward<T>(r));
+            this->state->complete_value();
+        }
+    };
+    template <>
+    struct task_promise_result<void>
+    {
+        task_state_base<void>* state{};
+        auto return_value() -> void
+        {
+            this->state->complete_value();
+        }
+    };
+
+    template <typename T>
+    struct task_completion { using type = ::beman::net29::detail::ex::set_value_t(T); };
+    template <>
+    struct task_completion<void> { using type = ::beman::net29::detail::ex::set_value_t(); };
+
     template <typename Result = void>
     struct task
     {
-        template <typename T>
-        struct state_base
-        {
-            ::std::optional<T> result;
-            virtual auto complete_value() -> void = 0;
-            virtual auto complete_error(::std::exception_ptr) -> void = 0;
-            virtual auto complete_stopped() -> void = 0;
-
-            template <typename Receiver>
-            auto set_value(Receiver& receiver)
-            {
-                ::beman::net29::detail::ex::set_value(
-                    ::std::move(receiver),
-                    ::std::move(*this->result)
-                 );
-            }
-        };
-        template <>
-        struct state_base<void>
-        {
-            virtual auto complete_value() -> void = 0;
-            virtual auto complete_error(::std::exception_ptr) -> void = 0;
-            virtual auto complete_stopped() -> void = 0;
-
-            template <typename Receiver>
-            auto set_value(Receiver& receiver)
-            {
-                ::beman::net29::detail::ex::set_value(::std::move(receiver));
-            }
-        };
-
         template <typename Promise, ex::sender Sender>
         struct sender_awaiter
         {
@@ -81,22 +120,9 @@ namespace demo
                     this->promise->state->complete_stopped();
                 }
             };
-            template <typename... T>
-            struct single_or_tuple { using type = ::std::tuple<::std::decay_t<T>...>; };
-            template <typename T>
-            struct single_or_tuple<T> { using type = ::std::decay_t<T>; };
-            template <typename... T>
-            using single_or_tuple_t = typename single_or_tuple<T...>::type;
-
-            struct none {};
-            template <typename... T> struct type_or_none;
-            template <typename T> struct type_or_none<T> { using type = T; };
-            template <> struct type_or_none<> { using type = none; };
-            template <typename... T> using type_or_none_t = typename type_or_none<T...>::type;
-
             using value_type
                 = ex::value_types_of_t<
-                    Sender, Promise, single_or_tuple_t, type_or_none_t>;
+                    Sender, Promise, task_single_or_tuple_t, task_type_or_none_t>;
             using state_type = decltype(ex::connect(::std::declval<Sender>(), std::declval<receiver>()));
 
             ::std::coroutine_handle<Promise> handle;
@@ -122,31 +148,9 @@ namespace demo
                 return *this->result;
             }
         };
-        template <typename E, typename S>
-        sender_awaiter(E const*, S&&) -> sender_awaiter<E, ::std::remove_cvref_t<S>>;
 
-        template <typename R>
-        struct promise_result
-        {
-            state_base<R>* state{};
-            template <typename T>
-            auto return_value(T&& r) -> void
-            {
-                this->state->result.emplace(std::forward<T>(r));
-                this->state->complete_value();
-            }
-        };
-        template <>
-        struct promise_result<void>
-        {
-            state_base<void>* state{};
-            auto return_value() -> void
-            {
-                this->state->complete_value();
-            }
-        };
         struct promise_type
-            : promise_result<Result>
+            : task_promise_result<Result>
         {
             auto initial_suspend() -> ::std::suspend_always { return {}; }
             auto final_suspend() noexcept -> ::std::suspend_always { return {}; }
@@ -158,15 +162,16 @@ namespace demo
             {
                 this->state->complete_error(::std::current_exception());
             }
-            auto await_transform(ex::sender auto && sender)
+            template <ex::sender Sender>
+            auto await_transform( Sender&& sender)
             {
-                return sender_awaiter(this, sender);
+                return sender_awaiter<promise_type, ::std::remove_cvref_t<Sender>>(this, sender);
             }
         };
 
         template <typename Receiver>
         struct state
-            : state_base<::std::decay_t<Result>>
+            : task_state_base<::std::decay_t<Result>>
         {
             using operation_state_concept = ::beman::net29::detail::ex::operation_state_t;
 
@@ -205,16 +210,12 @@ namespace demo
 
 
         ::std::coroutine_handle<task<Result>::promise_type> handle;
-        template <typename T>
-        struct completion { using type = ::beman::net29::detail::ex::set_value_t(T); };
-        template <>
-        struct completion<void> { using type = ::beman::net29::detail::ex::set_value_t(); };
 
         using sender_concept = ::beman::net29::detail::ex::sender_t;
         using completion_signatures = ::beman::net29::detail::ex::completion_signatures<
             ::beman::net29::detail::ex::set_error_t(::std::exception_ptr),
             ::beman::net29::detail::ex::set_stopped_t(),
-            typename completion<::std::decay_t<Result>>::type
+            typename task_completion<::std::decay_t<Result>>::type
         >;
 
         template <typename Receiver>
