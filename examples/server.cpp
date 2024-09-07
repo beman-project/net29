@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <iostream>
+#include <functional>
 #include <string_view>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
@@ -75,7 +76,7 @@ struct receiver
 struct result { int value{}; };
 struct error { int value{}; };
 
-int main()
+int main(int ac, char*[])
 {
     std::cout << std::unitbuf;
     std::cout << "example server\n";
@@ -84,7 +85,7 @@ int main()
     {
         std::cout << std::unitbuf;
         std::cout << "coroutine\n";
-        auto t = []()-> demo::task<result>
+        auto t{::std::invoke([](int ac)-> demo::task<result>
         {
             int i = co_await ex::just(17);
             std::cout << "i=" << i << "\n";
@@ -92,14 +93,18 @@ int main()
             std::cout << "a=" << a << ", b=" << b << "\n";
             try
             {
-                co_await ex::just(error{17});
+                co_await ex::just_error(error{17});
             }
             catch (error const& e)
             {
                 std::cout << "error=" << e.value << "\n";
             }
+            if (ac == 2)
+                co_await ex::just_stopped();
+            if (ac == 3)
+                throw error{42};
             co_return result{17};
-        }();
+        }, ac)};
         try
         {
             auto r{ex::sync_wait(::std::move(t))};
@@ -113,9 +118,17 @@ int main()
                 std::cout << "after coroutine: cancelled\n";
             }
         }
+        catch(error const& e)
+        {
+            ::std::cout << "after coroutine: error=" << e.value << "\n";
+        }
         catch(std::exception const& e)
         {
-            ::std::cout << "after coroutine: error\n";
+            ::std::cout << "after coroutine: exception=" << e.what() << "\n";
+        }
+        catch(...)
+        {
+            ::std::cout << "after coroutine: unknown exception\n";
         }
         
         return 0;

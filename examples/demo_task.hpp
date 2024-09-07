@@ -58,7 +58,7 @@ namespace demo
             {
                 using receiver_concept = ex::receiver_t;
 
-                Promise const*     env{};
+                Promise const*  promise{};
                 sender_awaiter* self{};
 
                 template <typename... Args>
@@ -78,7 +78,6 @@ namespace demo
                 }
                 auto set_stopped() noexcept -> void
                 {
-                    ::std::cout << "set_stopped()\n";
                     this->promise->state->complete_stopped();
                 }
             };
@@ -88,9 +87,16 @@ namespace demo
             struct single_or_tuple<T> { using type = ::std::decay_t<T>; };
             template <typename... T>
             using single_or_tuple_t = typename single_or_tuple<T...>::type;
+
+            struct none {};
+            template <typename... T> struct type_or_none;
+            template <typename T> struct type_or_none<T> { using type = T; };
+            template <> struct type_or_none<> { using type = none; };
+            template <typename... T> using type_or_none_t = typename type_or_none<T...>::type;
+
             using value_type
                 = ex::value_types_of_t<
-                    Sender, Promise, single_or_tuple_t, ::std::type_identity_t>;
+                    Sender, Promise, single_or_tuple_t, type_or_none_t>;
             using state_type = decltype(ex::connect(::std::declval<Sender>(), std::declval<receiver>()));
 
             ::std::coroutine_handle<Promise> handle;
@@ -148,7 +154,11 @@ namespace demo
             {
                 return task{::std::coroutine_handle<promise_type>::from_promise(*this)};
             }
-            auto unhandled_exception() -> void { std::terminate(); }
+            auto unhandled_exception() -> void
+            {
+                ::std::cout << "unhandled_exception\n";
+                this->state->complete_error(::std::current_exception());
+            }
             auto await_transform(ex::sender auto && sender)
             {
                 return sender_awaiter(this, sender);
