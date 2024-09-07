@@ -121,7 +121,7 @@ struct beman::net29::detail::send_desc
         Buffers   d_buffers;
 
         auto id() const { return this->d_stream.id(); }
-        auto events() const { return POLLIN; }
+        auto events() const { return POLLOUT; }
         auto get_scheduler() { return this->d_stream.get_scheduler(); }
         auto set_value(operation& o, auto&& receiver)
         {
@@ -150,7 +150,7 @@ struct beman::net29::detail::send_to_desc
         Endpoint  d_endpoint;
 
         auto id() const { return this->d_stream.id(); }
-        auto events() const { return POLLIN; }
+        auto events() const { return POLLOUT; }
         auto get_scheduler() { return this->d_stream.get_scheduler(); }
         auto set_value(operation& o, auto&& receiver)
         {

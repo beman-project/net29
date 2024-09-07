@@ -71,7 +71,7 @@ namespace demo
             state_t state;
             template <typename S>
             job(scope* self, S&& sender)
-                : state(::std::forward<S>(sender), receiver{self, this})
+                : state(ex::connect(::std::forward<S>(sender), receiver{self, this}))
             {
                 ex::start(this->state);
             }

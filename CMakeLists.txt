@@ -18,7 +18,7 @@ FetchContent_Declare(
     execution26
     #GIT_REPOSITORY git@github.com:beman-project/execution26.git
     SOURCE_DIR /Users/kuehl/src/execution26
-    GIT_TAG f9f5523
+    GIT_TAG fddcda6
 )
 FetchContent_MakeAvailable(execution26)
 

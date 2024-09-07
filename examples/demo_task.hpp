@@ -11,6 +11,10 @@
 #include <optional>
 #include <type_traits>
 
+#if defined(__clang__)
+#    pragma clang diagnostic ignored "-Wreturn-type"
+#endif
+
 // ----------------------------------------------------------------------------
 
 namespace demo

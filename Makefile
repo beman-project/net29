@@ -57,7 +57,7 @@ gcc:
 	$(MAKE) CXX=/opt/gcc-14.1.0/bin/g++
 
 clang:
-	$(MAKE) CXX=/opt/llvm-18.0.5/bin/clang++
+	$(MAKE) CXX=/opt/llvm-18.1.8/bin/clang++
 
 run: build
 	./$(BUILD)/examples/$(EXAMPLE)

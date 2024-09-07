@@ -200,8 +200,84 @@ struct beman::net29::detail::poll_context final
         return this->add_outstanding(completion);
     }
     auto connect(::beman::net29::detail::context_base::connect_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ } 
-    auto receive(::beman::net29::detail::context_base::receive_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ }
-    auto send(::beman::net29::detail::context_base::send_operation*) -> ::beman::net29::detail::submit_result override { return {}; /*-dk:TODO*/ }
+    auto receive(::beman::net29::detail::context_base::receive_operation* op)
+        -> ::beman::net29::detail::submit_result override
+    {
+        op->context = this;
+        op->work = [](::beman::net29::detail::context_base& ctxt,
+                      ::beman::net29::detail::io_base* op)
+        {
+            auto& completion(*static_cast<receive_operation*>(op));
+            while (true)
+            {
+                auto rc{::recvmsg(ctxt.native_handle(op->id),
+                                  &::std::get<0>(completion),
+                                  ::std::get<1>(completion))};
+                if (0 <= rc)
+                {
+                    ::std::get<2>(completion) = rc;
+                    completion.complete();
+                    return ::beman::net29::detail::submit_result::ready;
+                }
+                else switch (errno)
+                {
+                default:
+                    completion.error(::std::error_code(errno, ::std::system_category()));
+                    return ::beman::net29::detail::submit_result::error;
+                case ECONNRESET:
+                case EPIPE:
+                    ::std::get<2>(completion) = 0u;
+                    completion.complete();
+                    return ::beman::net29::detail::submit_result::ready;
+                case EINTR:
+                    break;
+                case EWOULDBLOCK:
+                    return ::beman::net29::detail::submit_result::submit;
+                }
+            }
+        };
+        return this->add_outstanding(op);
+    }
+    auto send(::beman::net29::detail::context_base::send_operation* op)
+        -> ::beman::net29::detail::submit_result override
+    {
+        op->context = this;
+        op->work = [](::beman::net29::detail::context_base& ctxt,
+                      ::beman::net29::detail::io_base* op)
+        {
+            auto& completion(*static_cast<send_operation*>(op));
+
+            while (true)
+            {
+                auto rc{::sendmsg(ctxt.native_handle(op->id),
+                                    &::std::get<0>(completion),
+                                    ::std::get<1>(completion))};
+                std::cout << "send rc=" << rc << "\n";
+                if (0 <= rc)
+                {
+                    ::std::get<2>(completion) = rc;
+                    completion.complete();
+                    return ::beman::net29::detail::submit_result::ready;
+                }
+                else switch (errno)
+                {
+                default:
+                    completion.error(::std::error_code(errno, ::std::system_category()));
+                    return ::beman::net29::detail::submit_result::error;
+                case ECONNRESET:
+                case EPIPE:
+                    ::std::get<2>(completion) = 0u;
+                    completion.complete();
+                    return ::beman::net29::detail::submit_result::ready;
+                case EINTR:
+                    break;
+                case EWOULDBLOCK:
+                    return ::beman::net29::detail::submit_result::submit;
+                }
+            }
+        };
+        return this->add_outstanding(op);
+    }
     auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> ::beman::net29::detail::submit_result override
     {
         //-dk:TODO

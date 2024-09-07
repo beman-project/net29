@@ -14,22 +14,7 @@ namespace net = ::beman::net29;
 
 auto use(auto&&) -> void {}
 
-#if 0
-template <typename E>
-struct error_handler_base
-{
-    void operator()(E)
-    {
-        std::cout << "error_handler\n";
-    }
-};
-template <typename... E>
-struct error_handler
-    : error_handler_base<E>...
-{
-};
-
-auto make_client(exec::async_scope& scope, auto client) -> exec::task<void>
+auto make_client( auto client) -> demo::task<void>
 {
     try
     {
@@ -38,43 +23,16 @@ auto make_client(exec::async_scope& scope, auto client) -> exec::task<void>
         {
             std::string_view message(+buffer, size);
             std::cout << "received<" << size << ">(" << message << ")\n";
-            if (message.starts_with("exit"))
-            {
-                std::cout << "exiting\n";
-                scope.get_stop_source().request_stop();
-            }
-            auto ssize = co_await net::async_send(client, net::mutable_buffer(buffer, size));
+            auto ssize = co_await net::async_send(client, net::const_buffer(buffer, size));
             std::cout << "sent<ssize>(" << ::std::string_view(buffer, ssize) << ")\n";
         }
         std::cout << "client done\n";
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
+        std::cerr << "ERROR: " << e.what() << '\n';
     }
-    
 }
-#endif
-
-struct receiver
-{
-    using receiver_concept = ex::receiver_t;
-    auto set_value(auto&&, auto&& ep) && noexcept -> void
-    {
-        std::cout << "ep=" << ep << "\n";
-    }
-    auto set_error(auto&& error) && noexcept -> void
-    {
-        std::cout << "error=" << error << "\n";
-    }
-    auto set_stopped() && noexcept -> void
-    {
-        std::cout << "cancelled\n";
-    }
-};
-
-struct result { int value{}; };
-struct error { int value{}; };
 
 int main()
 {
@@ -86,42 +44,18 @@ int main()
         demo::scope            scope;
         net::io_context        context;
 
-        scope.spawn(std::invoke([](auto& scope, auto& context)->demo::task<int>{
+        scope.spawn(std::invoke([](auto& scope, auto& context)->demo::task<>{
             net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
             net::ip::tcp::acceptor acceptor(context, endpoint);
             auto[stream, ep] = co_await net::async_accept(acceptor);
 
             std::cout << "ep=" << ep << "\n";
-            use(scope);
-        }, scope, context)
-        | ex::then([](auto rc){ std::cout << "rc=" << rc << "\n"; }
-        ));
+            scope.spawn(make_client(std::move(stream)));
+        }, scope, context));
 
         context.run();
 
 #if 0
-        auto[stream, ep] = *ex::sync_wait(net::async_accept(acceptor));
-        std::cout << "sync completed\n";
-        std::cout << "ep=" << ep << "\n";
-        std::cout << "print completed\n";
-#endif
-#if 0
-
-        std::cout << "spawning accept\n";
-        scope.spawn(std::invoke([](auto& scope, auto& acceptor)->exec::task<void>{
-            while (true)
-            {
-                auto[stream, endpoint] = co_await net::async_accept(acceptor);
-                scope.spawn(
-                    make_client(scope, std::move(stream))
-                    | stdexec::upon_stopped([]{ std::cout << "client cancelled\n"; })
-                    );
-                std::cout << "accepted a client\n";
-            }
-        }, scope, acceptor)
-        | stdexec::upon_stopped([]{ std::cout << "acceptor cancelled\n"; })
-        );
-
         scope.spawn(std::invoke([](auto scheduler)->exec::task<void>{
             using namespace std::chrono_literals;
             for (int i{}; i < 100; ++i)
