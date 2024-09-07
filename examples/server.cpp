@@ -91,14 +91,18 @@ int main()
         auto s{
             net::async_accept(acceptor)
             //| ex::then([](auto&&, auto&&){})
-            //| ex::upon_error([](auto&&){})
-            | ex::upon_stopped([](auto&&){})
+            | ex::upon_error([](auto&&){})
         };
+        use(s);
         using comp = decltype(ex::get_completion_signatures(s, ex::empty_env()));
+        static_assert(std::same_as<int, beman::execution26::detail::meta::unique<comp>>);
+        //static_assert(std::same_as<int, comp>);
+#if 0
         static_assert(std::same_as<
-            ex::completion_signatures<ex::set_value_t()>,
+            ex::completion_signatures<ex::set_value_t(), ex::set_stopped_t()>,
             comp
         >);
+#endif
 #if 0
         scope.spawn(
             net::async_accept(acceptor)

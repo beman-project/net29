@@ -17,7 +17,7 @@ include(FetchContent)
 FetchContent_Declare(
     execution26
     GIT_REPOSITORY git@github.com:beman-project/execution26.git
-    GIT_TAG 3a376f6
+    GIT_TAG 9703ca8
 )
 FetchContent_MakeAvailable(execution26)
 

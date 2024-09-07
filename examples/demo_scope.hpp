@@ -37,6 +37,14 @@ namespace demo
 
             auto set_value() && noexcept -> void
             {
+                this->complete();
+            }
+            auto set_stopped() && noexcept -> void
+            {
+                this->complete();
+            }
+            auto complete() -> void
+            {
                 scope* self{this->self};
                 delete this->state;
                 if (0u == --self->count)
