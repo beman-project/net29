@@ -95,7 +95,7 @@ struct beman::net29::detail::connect_desc
         Socket& d_socket;
 
         auto id() const { return this->d_socket.id(); }
-        auto events() const { return POLLOUT; }
+        auto events() const { return POLLIN | POLLOUT; }
         auto get_scheduler() { return this->d_socket.get_scheduler(); }
         auto set_value(operation&, auto&& receiver)
         {
