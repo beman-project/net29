@@ -38,17 +38,15 @@ namespace demo
 
             auto set_error(auto&&) noexcept -> void
             {
-                ::std::cerr << "ERROR: job in scope completed with error!\n";
+                ::std::cerr << "ERROR: demo::scope::job in scope completed with error!\n";
                 this->complete();
             }
             auto set_value() && noexcept -> void
             {
-                ::std::cerr << "set_value";
                 this->complete();
             }
             auto set_stopped() && noexcept -> void
             {
-                ::std::cerr << "set_value";
                 this->complete();
             }
             auto complete() -> void

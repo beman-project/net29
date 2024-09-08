@@ -74,16 +74,14 @@ namespace demo
         auto return_value(T&& r) -> void
         {
             this->state->result.emplace(std::forward<T>(r));
-            this->state->complete_value();
         }
     };
     template <>
     struct task_promise_result<void>
     {
         task_state_base<void>* state{};
-        auto return_value() -> void
+        auto return_void() -> void
         {
-            this->state->complete_value();
         }
     };
 
@@ -102,27 +100,26 @@ namespace demo
             {
                 using receiver_concept = ex::receiver_t;
 
-                Promise const*  promise{};
-                sender_awaiter* self{};
+                sender_awaiter* awaiter{};
 
                 template <typename... Args>
                 auto set_value(Args&&... args) noexcept -> void
                 {
-                    this->self->result.emplace(::std::forward<Args>(args)...);
-                    this->self->handle.resume();
+                    this->awaiter->result.emplace(::std::forward<Args>(args)...);
+                    this->awaiter->handle.resume();
                 }
                 template <typename Error>
                 auto set_error(Error&& error) noexcept -> void
                 {
                     if constexpr (::std::same_as<::std::decay_t<Error>, ::std::exception_ptr>)
-                        this->self->error = error;
+                        this->awaiter->error = error;
                     else
-                        this->self->error = ::std::make_exception_ptr(::std::forward<Error>(error));
-                    this->self->handle.resume();
+                        this->awaiter->error = ::std::make_exception_ptr(::std::forward<Error>(error));
+                    this->awaiter->handle.resume();
                 }
                 auto set_stopped() noexcept -> void
                 {
-                    this->promise->state->complete_stopped();
+                    this->awaiter->stop();
                 }
             };
             using value_type
@@ -135,12 +132,13 @@ namespace demo
             ::std::optional<value_type>      result;
             state_type                       state;
 
-            sender_awaiter(Promise* promise, Sender sender)
-                : state(ex::connect(::std::move(sender), receiver{promise, this}))
+            sender_awaiter(Sender sender)
+                : state(ex::connect(::std::move(sender), receiver{this}))
             {
             }
 
-            auto await_ready() const noexcept -> bool { return false; }
+            auto stop() { /*-dk:TODO: forward stopped result*/ }
+            constexpr auto await_ready() const noexcept -> bool { return false; }
             auto await_suspend(::std::coroutine_handle<Promise> handle) -> void
             {
                 this->handle = handle;
@@ -154,11 +152,23 @@ namespace demo
             }
         };
 
+        struct promise_type;
+        struct final_awaiter
+        {
+            promise_type* promise;
+            constexpr auto await_ready() const noexcept -> bool { return false; }
+            auto await_suspend(::std::coroutine_handle<>) noexcept -> void
+            {
+                this->promise->state->complete_value();
+            }
+            constexpr auto await_resume() const noexcept -> void {}
+        };
+
         struct promise_type
             : task_promise_result<Result>
         {
             auto initial_suspend() -> ::std::suspend_always { return {}; }
-            auto final_suspend() noexcept -> ::std::suspend_always { return {}; }
+            auto final_suspend() noexcept -> final_awaiter { return {this}; }
             auto get_return_object() -> task
             {
                 return {unique_handle(this)};
@@ -168,9 +178,9 @@ namespace demo
                 this->state->complete_error(::std::current_exception());
             }
             template <ex::sender Sender>
-            auto await_transform( Sender&& sender)
+            auto await_transform(Sender&& sender)
             {
-                return sender_awaiter<promise_type, ::std::remove_cvref_t<Sender>>(this, sender);
+                return sender_awaiter<promise_type, ::std::remove_cvref_t<Sender>>(sender);
             }
         };
 

@@ -25,13 +25,30 @@ auto main() -> int
         net::ip::tcp::endpoint ep(net::ip::address_v4::loopback(), 12345);
         net::ip::tcp::socket   client(context, ep);
 
-        for (int i{}; i < 5; ++i)
+        if (false) for (int i{}; i < 5; ++i)
         {
             std::cout << "i=" << i << "\n";
             co_await net::resume_after(context.get_scheduler(), 1s);
         }
 
-        co_await net::async_connect(client);
+        if (not co_await (net::async_connect(client)
+            | ex::then([](auto&&...){ return true; })
+            | ex::upon_error([](auto e){
+                if constexpr (std::same_as<std::error_code, decltype(e)>)
+                {
+                    std::error_code f = e;
+                    std::cout << "error_code=" << f.message() << "\n";
+                }
+                else if constexpr (std::same_as<std::exception_ptr, decltype(e)>)
+                    ;
+                else
+                    static_assert(std::same_as<std::error_code, decltype(e)>);
+                return false;
+            })))
+        {
+            co_return;
+        }
+
         std::cout << "connected\n";
         char message[] = "hello, world\n";
         auto b = net::buffer(message);
@@ -45,7 +62,23 @@ auto main() -> int
                     break;
             }
         }
-    }, context));
+    }, context)
+#if 0
+    | ex::upon_error([](std::exception_ptr ex) {
+        try {
+            std::cout << "encountered an error!\n";
+            std::rethrow_exception(ex);
+        }
+        catch (std::system_error const& error) {
+            std::cout << "error=" << error.what() << "\n";
+        }
+        catch (...)
+        {
+            std::cout << "unknown error\n";
+        }
+    })
+#endif
+    );
 
     context.run();
 }
