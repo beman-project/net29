@@ -7,6 +7,7 @@
 #include <beman/net29/net.hpp>
 #include <exception>
 #include <coroutine>
+#include <memory>
 #include <tuple>
 #include <optional>
 #include <type_traits>
@@ -158,9 +159,9 @@ namespace demo
         {
             auto initial_suspend() -> ::std::suspend_always { return {}; }
             auto final_suspend() noexcept -> ::std::suspend_always { return {}; }
-            auto get_return_object()
+            auto get_return_object() -> task
             {
-                return task{::std::coroutine_handle<promise_type>::from_promise(*this)};
+                return {unique_handle(this)};
             }
             auto unhandled_exception() -> void
             {
@@ -173,17 +174,22 @@ namespace demo
             }
         };
 
+        using deleter = decltype([](promise_type* p) {
+            std::coroutine_handle<promise_type>::from_promise(*p).destroy();
+        });
+        using unique_handle= std::unique_ptr<promise_type, deleter>;
+
         template <typename Receiver>
         struct state
             : task_state_base<::std::decay_t<Result>>
         {
             using operation_state_concept = ::beman::net29::detail::ex::operation_state_t;
 
-            ::std::coroutine_handle<promise_type> handle;
-            ::std::decay_t<Receiver>              receiver;
+            unique_handle            handle;
+            ::std::decay_t<Receiver> receiver;
 
             template <typename R>
-            state(::std::coroutine_handle<promise_type> handle, R&& receiver)
+            state(unique_handle handle, R&& receiver)
                 : handle(::std::move(handle))
                 , receiver(::std::forward<R>(receiver))
             {
@@ -191,8 +197,8 @@ namespace demo
 
             auto start() & noexcept -> void
             {
-                this->handle.promise().state = this;
-                this->handle.resume();
+                this->handle->state = this;
+                std::coroutine_handle<promise_type>::from_promise(*this->handle).resume();
             }
 
             auto complete_value() -> void override
@@ -213,7 +219,7 @@ namespace demo
         };
 
 
-        ::std::coroutine_handle<task<Result>::promise_type> handle;
+        unique_handle handle;
 
         using sender_concept = ::beman::net29::detail::ex::sender_t;
         using completion_signatures = ::beman::net29::detail::ex::completion_signatures<

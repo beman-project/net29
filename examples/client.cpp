@@ -4,6 +4,7 @@
 #include <beman/net29/net.hpp>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include "demo_task.hpp"
 #include "demo_scope.hpp"
 
@@ -14,10 +15,12 @@ namespace net = ::beman::net29;
 
 auto main() -> int
 {
+    using on_exit = std::unique_ptr<char const, decltype([](auto m){ std::cout << m << "\n";})>;
     net::io_context context;
     demo::scope     scope;
 
     scope.spawn(std::invoke([](auto& context)->demo::task<> {
+        on_exit msg("connecting client done");
         net::ip::tcp::endpoint ep(net::ip::address_v4::loopback(), 12345);
         net::ip::tcp::socket   client(context, ep);
         co_await net::async_connect(client);
@@ -28,7 +31,10 @@ auto main() -> int
             char buffer[20];
             while (auto size = co_await net::async_receive(client, net::buffer(buffer)))
             {
-                std::cout << "received='" << std::string_view(buffer, size) << "'\n";
+                std::string_view response(buffer, size);
+                std::cout << "received='" << response << "'\n";
+                if (response.find('\n') != response.npos)
+                    break;
             }
         }
     }, context));
