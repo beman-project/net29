@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <string_view>
+#include <expected>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
 #include "demo_scope.hpp"
@@ -14,12 +15,21 @@ namespace net = ::beman::net29;
 
 auto use(auto&&) -> void {}
 
+///timeout(time, sender, ....)
+///{
+///    return when_any(sender..., resume_after(time) | into_erro())
+///}
+
 auto make_client( auto client) -> demo::task<void>
 {
     try
     {
         char buffer[8];
         while (auto size = co_await net::async_receive(client, net::buffer(buffer)))
+        //while (auto size = co_await timeout(
+        //    net::async_receive(client, net::buffer(buffer),
+        //    resume_after(5s);
+        //) | upon_error[](auto){ return 0; })))
         {
             std::string_view message(+buffer, size);
             std::cout << "received<" << size << ">(" << message << ")\n";

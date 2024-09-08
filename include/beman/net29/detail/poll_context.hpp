@@ -29,8 +29,8 @@ namespace beman::net29::detail
 struct beman::net29::detail::poll_record final
 {
     poll_record(::beman::net29::detail::native_handle_type h): handle(h) {}
-    ::beman::net29::detail::native_handle_type                   handle;
-    bool                                                   blocking{true};
+    ::beman::net29::detail::native_handle_type handle;
+    bool                                       blocking{true};
 };
 
 // ----------------------------------------------------------------------------
@@ -39,7 +39,7 @@ struct beman::net29::detail::poll_context final
     : ::beman::net29::detail::context_base
 {
     ::beman::net29::detail::container<::beman::net29::detail::poll_record> d_sockets;
-    ::std::vector<::pollfd>     d_poll;
+    ::std::vector<::pollfd>                         d_poll;
     ::std::vector<::beman::net29::detail::io_base*> d_outstanding;
 
     auto make_socket(int fd) -> ::beman::net29::detail::socket_id override final
@@ -208,20 +208,17 @@ struct beman::net29::detail::poll_context final
         auto const& endpoint(::std::get<0>(*op));
         if (-1 == ::fcntl(handle, F_SETFL, O_NONBLOCK))
         {
-            std::cout << "error: fcntl\n";
             op->error(::std::error_code(errno, ::std::system_category()));
             return ::beman::net29::detail::submit_result::error;
         }
         if (0 == ::connect(handle, endpoint.data(), endpoint.size()))
         {
-            std::cout << "connect: complete\n";
             op->complete();
             return ::beman::net29::detail::submit_result::ready;
         }
         switch (errno)
         {
         default:
-            std::cout << "connect: error\n";
             op->error(::std::error_code(errno, ::std::system_category()));
             return ::beman::net29::detail::submit_result::error;
         case EINPROGRESS:
@@ -234,25 +231,21 @@ struct beman::net29::detail::poll_context final
                       ::beman::net29::detail::io_base* op)
         {
             auto handle{ctxt.native_handle(op->id)};
-            std::cout << "connect: ready\n";
 
             int error{};
             ::socklen_t len{sizeof(error)};
             if (-1 == ::getsockopt(handle, SOL_SOCKET, SO_ERROR, &error, &len))
             {
-                std::cout << "getsockopt: error\n";
                 op->error(::std::error_code(errno, ::std::system_category()));
                 return ::beman::net29::detail::submit_result::error;
             }
             if (0 == error)
             {
-                std::cout << "getsockopt: complete\n";
                 op->complete();
                 return ::beman::net29::detail::submit_result::ready;
             }
             else
             {
-                std::cout << "getsockopt: errno\n";
                 op->error(::std::error_code(error, ::std::system_category()));
                 return ::beman::net29::detail::submit_result::error;
             }

@@ -37,7 +37,7 @@ struct beman::net29::detail::resume_after_desc
         using completion_signature = ::beman::net29::detail::ex::set_value_t();
 
         ::std::remove_cvref_t<Scheduler> d_scheduler;
-        ::std::chrono::microseconds       d_duration;
+        ::std::chrono::microseconds      d_duration;
 
         auto id() const -> ::beman::net29::detail::socket_id { return {}; }
         auto events() const { return decltype(POLLIN)(); }

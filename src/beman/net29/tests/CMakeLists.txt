@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 list(APPEND execution_tests
-    dummy.pass
+    sorted_list.pass
 )
 
 foreach(test ${execution_tests})
