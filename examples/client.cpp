@@ -15,6 +15,7 @@ namespace net = ::beman::net29;
 
 auto main() -> int
 {
+    using namespace std::chrono_literals;
     using on_exit = std::unique_ptr<char const, decltype([](auto m){ std::cout << m << "\n";})>;
     net::io_context context;
     demo::scope     scope;
@@ -23,6 +24,13 @@ auto main() -> int
         on_exit msg("connecting client done");
         net::ip::tcp::endpoint ep(net::ip::address_v4::loopback(), 12345);
         net::ip::tcp::socket   client(context, ep);
+
+        for (int i{}; i < 5; ++i)
+        {
+            std::cout << "i=" << i << "\n";
+            co_await net::resume_after(context.get_scheduler(), 1s);
+        }
+
         co_await net::async_connect(client);
         std::cout << "connected\n";
         char message[] = "hello, world\n";

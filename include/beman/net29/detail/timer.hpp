@@ -17,13 +17,13 @@ namespace beman::net29::detail
     struct resume_at_desc;
 }
 
-namespace beman::net29::detail
+namespace beman::net29
 {
     using async_resume_after_t = ::beman::net29::detail::sender_cpo<::beman::net29::detail::resume_after_desc>;
     using async_resume_at_t    = ::beman::net29::detail::sender_cpo<::beman::net29::detail::resume_at_desc>;
 
-    inline constexpr async_resume_after_t async_resume_after{};
-    inline constexpr async_resume_at_t    async_resume_at{};
+    inline constexpr async_resume_after_t resume_after{};
+    inline constexpr async_resume_at_t    resume_at{};
 }
 
 // ----------------------------------------------------------------------------
@@ -36,8 +36,8 @@ struct beman::net29::detail::resume_after_desc
     {
         using completion_signature = ::beman::net29::detail::ex::set_value_t();
 
-        ::std::remove_cvref_t<Scheduler> d_scheduler;
-        ::std::chrono::microseconds      d_duration;
+        ::std::remove_cvref_t<Scheduler>        d_scheduler;
+        ::std::chrono::microseconds             d_duration;
 
         auto id() const -> ::beman::net29::detail::socket_id { return {}; }
         auto events() const { return decltype(POLLIN)(); }
@@ -46,10 +46,10 @@ struct beman::net29::detail::resume_after_desc
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver));
         }
-        auto submit(auto* base) -> bool
+        auto submit(auto* base) -> ::beman::net29::detail::submit_result
         {
-            ::std::get<0>(*base) = this->d_duration;
-            return this->d_scheduler.resume_after(base);
+            ::std::get<0>(*base) = ::std::chrono::system_clock::now() + this->d_duration;
+            return this->d_scheduler.resume_at(base);
         }
     };
 };
@@ -64,7 +64,7 @@ struct beman::net29::detail::resume_at_desc
     {
         using completion_signature = ::beman::net29::detail::ex::set_value_t();
 
-        ::std::remove_cvref_t<Scheduler>       d_scheduler;
+        ::std::remove_cvref_t<Scheduler>        d_scheduler;
         ::std::chrono::system_clock::time_point d_time;
 
         auto id() const -> ::beman::net29::detail::socket_id { return {}; }

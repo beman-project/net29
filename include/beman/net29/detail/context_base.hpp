@@ -39,7 +39,7 @@ struct beman::net29::detail::context_base
         ::std::tuple<::msghdr, int, ::std::size_t>
         >;
     using resume_after_operation = ::beman::net29::detail::io_operation<
-        ::std::tuple<::std::chrono::microseconds, ::timeval>
+        ::std::tuple<::std::chrono::system_clock::time_point, ::timeval>
         >;
     using resume_at_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::std::chrono::system_clock::time_point, ::timeval>
@@ -64,8 +64,6 @@ struct beman::net29::detail::context_base
     virtual auto receive(::beman::net29::detail::context_base::receive_operation*)
         -> ::beman::net29::detail::submit_result = 0;
     virtual auto send(::beman::net29::detail::context_base::send_operation*)
-        -> ::beman::net29::detail::submit_result = 0;
-    virtual auto resume_after(::beman::net29::detail::context_base::resume_after_operation*)
         -> ::beman::net29::detail::submit_result = 0;
     virtual auto resume_at(::beman::net29::detail::context_base::resume_at_operation*)
         -> ::beman::net29::detail::submit_result = 0;

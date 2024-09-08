@@ -56,11 +56,6 @@ public:
     {
         return this->d_context->send(op);
     }
-    auto resume_after(::beman::net29::detail::context_base::resume_after_operation* op)
-        -> ::beman::net29::detail::submit_result
-    {
-        return this->d_context->resume_after(op);
-    }
     auto resume_at(::beman::net29::detail::context_base::resume_at_operation* op)
         -> ::beman::net29::detail::submit_result
     {

@@ -86,6 +86,21 @@ namespace
         assert(l.empty());
     }
 
+    auto test_pop_front_or() -> void
+    {
+        node n[] = { {3}, {2}, {5}, {4} };
+        beman::net29::detail::sorted_list<node> l;
+        for (node& c: n)
+            l.insert(&c);
+        
+        assert(l.pop_front_or(-1) == 2);
+        assert(l.pop_front_or(-1) == 3);
+        assert(l.pop_front_or(-1) == 4);
+        assert(l.pop_front_or(-1) == 5);
+        assert(l.pop_front_or(-1) == -1);
+    }
+        
+
     auto test_erase() -> void
     {
         std::cout << "test erase()\n";
@@ -122,5 +137,6 @@ auto main() -> int
 {
     test_insert();
     test_pop_front();
+    test_pop_front_or();
     test_erase();
 }

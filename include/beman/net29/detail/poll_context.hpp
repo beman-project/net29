@@ -9,6 +9,7 @@
 #include <beman/net29/detail/netfwd.hpp>
 #include <beman/net29/detail/container.hpp>
 #include <beman/net29/detail/context_base.hpp>
+#include <beman/net29/detail/sorted_list.hpp>
 #include <vector>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -38,9 +39,18 @@ struct beman::net29::detail::poll_record final
 struct beman::net29::detail::poll_context final
     : ::beman::net29::detail::context_base
 {
+    using time_t = ::std::chrono::system_clock::time_point;
+    using timer_node_t = ::beman::net29::detail::context_base::resume_at_operation;
+    using timer_priority_t
+        = ::beman::net29::detail::sorted_list<
+            timer_node_t,
+            decltype([](time_t t0, time_t t1){ return t0 < t1; }),
+            decltype([](timer_node_t* t){ return ::std::get<0>(*t); })
+        >;
     ::beman::net29::detail::container<::beman::net29::detail::poll_record> d_sockets;
     ::std::vector<::pollfd>                         d_poll;
     ::std::vector<::beman::net29::detail::io_base*> d_outstanding;
+    timer_priority_t d_timeouts;
 
     auto make_socket(int fd) -> ::beman::net29::detail::socket_id override final
     {
@@ -99,15 +109,35 @@ struct beman::net29::detail::poll_context final
         }
     }
 
+    auto process_timeout(auto const& now) -> ::std::size_t
+    {
+        if (!this->d_timeouts.empty() && ::std::get<0>(*this->d_timeouts.front()) <= now)
+        {
+            this->d_timeouts.pop_front()->complete();
+            return 1u;
+        }
+        return 0u;
+    }
+    auto to_milliseconds(auto duration) -> int
+    {
+        return ::std::chrono::duration_cast<::std::chrono::milliseconds>(duration).count();
+    }
     auto run_one() -> ::std::size_t override final
     {
-        if (this->d_poll.empty())
+        auto now{::std::chrono::system_clock::now()};
+        if (0u < this->process_timeout(now))
+        {
+            return 1u;
+        }
+        if (this->d_poll.empty() && this->d_timeouts.empty())
         {
             return ::std::size_t{};
         }
         while (true)
         {
-            int rc(::poll(this->d_poll.data(), this->d_poll.size(), -1));
+            auto next_time{this->d_timeouts.value_or(now)};
+            int timeout{now == next_time? -1: this->to_milliseconds(next_time - now)};
+            int rc(::poll(this->d_poll.data(), this->d_poll.size(), timeout));
             if (rc < 0)
             {
                 switch (errno)
@@ -136,6 +166,10 @@ struct beman::net29::detail::poll_context final
                         completion->work(*this, completion);
                         return ::std::size_t(1);
                     }
+                }
+                if (0u < this->process_timeout(::std::chrono::system_clock::now()))
+                {
+                    return 1u;
                 }
             }
         }
@@ -330,15 +364,18 @@ struct beman::net29::detail::poll_context final
         };
         return this->add_outstanding(op);
     }
-    auto resume_after(::beman::net29::detail::context_base::resume_after_operation*) -> ::beman::net29::detail::submit_result override
+    auto resume_at(::beman::net29::detail::context_base::resume_at_operation* op) -> ::beman::net29::detail::submit_result override
     {
-        //-dk:TODO
-        return {};
-    }
-    auto resume_at(::beman::net29::detail::context_base::resume_at_operation*) -> ::beman::net29::detail::submit_result override
-    {
-        //-dk:TODO
-        return {};
+        if (::std::chrono::system_clock::now() < ::std::get<0>(*op))
+        {
+            this->d_timeouts.insert(op);
+            return ::beman::net29::detail::submit_result::submit;
+        }
+        else
+        {
+            op->complete();
+            return ::beman::net29::detail::submit_result::ready;
+        }
     }
 };
 
