@@ -34,7 +34,7 @@ struct beman::net29::detail::sorted_list
     auto pop_front() -> T*;
     auto pop_front_or(auto&& v) { return this->empty()? v: this->value(this->pop_front()); }
     auto insert(T* node) -> T*;
-    auto erase(T*) -> T*;
+    auto erase(next_t) -> next_t;
 };
 
 template <typename T, typename Compare, typename Value>
@@ -57,9 +57,9 @@ auto beman::net29::detail::sorted_list<T, Compare, Value>::insert(T* node) -> T*
 }
 
 template <typename T, typename Compare, typename Value>
-auto beman::net29::detail::sorted_list<T, Compare, Value>::erase(T* node) -> T*
+auto beman::net29::detail::sorted_list<T, Compare, Value>::erase(next_t node) -> next_t
 {
-    T** it{&this->head};
+    next_t* it{&this->head};
     while (*it != node && *it != nullptr)
         it = &(*it)->next;
     if (*it == node)

@@ -46,10 +46,12 @@ namespace demo
             }
             auto set_value() && noexcept -> void
             {
+                std::cout << "demo::scope::set_value()\n";
                 this->complete();
             }
             auto set_stopped() && noexcept -> void
             {
+                std::cout << "demo::scope::set_stopped()\n";
                 this->complete();
             }
             auto complete() -> void
@@ -84,6 +86,11 @@ namespace demo
         auto complete() -> void {}
 
     public:
+        ~scope()
+        {
+            if (0u < this->count)
+                std::cerr << "ERROR: scope destroyed with live jobs: " << this->count << "\n";
+        }
         template <ex::sender Sender>
         auto spawn(Sender&& sender)
         {
@@ -92,9 +99,7 @@ namespace demo
         }
         auto stop()
         {
-            std::cout << "demo::scope received stop\n";
             this->source.request_stop();
-            std::cout << "demo::scope stop requested\n";
         }
     };
 }

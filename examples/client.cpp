@@ -22,12 +22,15 @@ auto main() -> int
     net::io_context context;
     demo::scope     scope;
 
-    scope.spawn(
-        ex::read_env(ex::get_stop_token)
-        | ex::then([](auto t){
-            use(t);
-            //static_assert(std::same_as<void, decltype(t)>);
-        })
+    scope.spawn(std::invoke(
+        [](auto& context) -> demo::task<> {
+            on_exit msg("5s timer");
+            co_await net::resume_after(context.get_scheduler(), 5s);
+            std::cout << "5s timer expired\n";
+        } , context)
+        //net::resume_after(context.get_scheduler(), 5s)
+        //| ex::then([]{ std::cout << "5s timer expired\n"; })
+        //| ex::upon_stopped([]{ std::cout << "5s timer got cancelled\n"; })
     );
 
     auto stop = [&scope, &context]{
@@ -35,11 +38,13 @@ auto main() -> int
             ex::schedule(context.get_scheduler())
             | ex::then([]{ std::cout << "sending stop\n"; })
             | ex::then([&scope]{ scope.stop(); })
+            | ex::then([]{ std::cout << "task sending stop signal\n"; })
         );
     };
 
     scope.spawn(std::invoke(
         [](auto& context, auto stop)->demo::task<> {
+            on_exit msg("timer task (enqueing stop task");
             std::cout << "timer task\n";
             for (int i{}; i < 1; ++i)
             {

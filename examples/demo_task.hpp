@@ -143,7 +143,7 @@ namespace demo
             {
             }
 
-            auto stop() { /*-dk:TODO: forward stopped result*/ }
+            auto stop() -> void;
             auto get_token() const noexcept -> ex::inplace_stop_token;
             constexpr auto await_ready() const noexcept -> bool { return false; }
             auto await_suspend(::std::coroutine_handle<Promise> handle) -> void
@@ -208,7 +208,6 @@ namespace demo
                 promise_type* promise;
                 auto operator()() const
                 {
-                    ::std::cout << "task: requesting stop\n";
                     this->promise->stop_source.request_stop();
                 }
             };
@@ -280,6 +279,15 @@ demo::task<Result>::sender_awaiter<Promise, Sender>::env::query(demo::ex::get_st
     -> demo::ex::inplace_stop_token
 {
     return this->awaiter->handle.promise().stop_source.get_token();
+}
+
+template <typename Result>
+    template <typename Promise, demo::ex::sender Sender>
+auto
+demo::task<Result>::sender_awaiter<Promise, Sender>::stop() ->void
+{
+    std::cout << "demo::task::stop() received\n";
+    //this->handle.promise().state->complete_stopped();
 }
 
 // ----------------------------------------------------------------------------

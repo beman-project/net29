@@ -130,6 +130,16 @@ struct beman::net29::detail::poll_context final
         }
         return 0u;
     }
+    auto remove_outstanding(::std::size_t i)
+    {
+        if (i + 1u != this->d_poll.size())
+        {
+            this->d_poll[i] = this->d_poll.back();
+            this->d_outstanding[i] = this->d_outstanding.back();
+        }
+        this->d_poll.pop_back();
+        this->d_outstanding.pop_back();
+    }
     auto to_milliseconds(auto duration) -> int
     {
         return ::std::chrono::duration_cast<::std::chrono::milliseconds>(duration).count();
@@ -170,13 +180,7 @@ struct beman::net29::detail::poll_context final
                     if (this->d_poll[i].revents & (this->d_poll[i].events | POLLERR))
                     {
                         ::beman::net29::detail::io_base* completion = this->d_outstanding[i];
-                        if (i + 1u != this->d_poll.size())
-                        {
-                            this->d_poll[i] = this->d_poll.back();
-                            this->d_outstanding[i] = this->d_outstanding.back();
-                        }
-                        this->d_poll.pop_back();
-                        this->d_outstanding.pop_back();
+                        this->remove_outstanding(i);
                         completion->work(*this, completion);
                         return ::std::size_t(1);
                     }
@@ -209,10 +213,24 @@ struct beman::net29::detail::poll_context final
         return ::beman::net29::detail::submit_result::ready;
     }
 
-    auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void override final
+    auto cancel(::beman::net29::detail::io_base* cancel_op, ::beman::net29::detail::io_base* op) -> void override final
     {
-        std::cout << "TODO: setup up poll_context::cancel\n";
-        //-dk:TODO
+        auto it(::std::find(this->d_outstanding.begin(), this->d_outstanding.end(), op));
+        if (it != this->d_outstanding.end())
+        {
+            this->remove_outstanding(::std::distance(this->d_outstanding.begin(), it));
+            op->cancel();
+            cancel_op->cancel();
+        }
+        else if (this->d_timeouts.erase(op))
+        {
+            op->cancel();
+            cancel_op->cancel();
+        }
+        else
+        {
+            std::cerr << "ERROR: poll_context::cancel(): entity not cancelled!\n";
+        }
     }
     auto schedule(::beman::net29::detail::context_base::task* task) -> void override
     {
