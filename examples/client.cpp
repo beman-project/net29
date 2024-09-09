@@ -24,7 +24,7 @@ auto main() -> int
 
     scope.spawn(std::invoke(
         [](auto& context) -> demo::task<> {
-            on_exit msg("5s timer");
+            on_exit msg("5s timer - done");
             co_await net::resume_after(context.get_scheduler(), 5s);
             std::cout << "5s timer expired\n";
         } , context)
@@ -44,18 +44,13 @@ auto main() -> int
 
     scope.spawn(std::invoke(
         [](auto& context, auto stop)->demo::task<> {
-            on_exit msg("timer task (enqueing stop task");
-            std::cout << "timer task\n";
-            for (int i{}; i < 1; ++i)
-            {
-                std::cout << "i=" << i << "\n";
-                co_await net::resume_after(context.get_scheduler(), 1s);
-            }
-            std::cout << "show cancel the scope!\n";
+            on_exit msg("timer task (enqueing stop task) - done");
+            co_await net::resume_after(context.get_scheduler(), 1s);
             stop();
         }, context, stop));
+
     scope.spawn(std::invoke([](auto& context)->demo::task<> {
-        on_exit msg("connecting client done");
+        on_exit msg("connecting client - done");
         net::ip::tcp::endpoint ep(net::ip::address_v4::loopback(), 12345);
         net::ip::tcp::socket   client(context, ep);
 

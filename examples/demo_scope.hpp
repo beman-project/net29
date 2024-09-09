@@ -18,6 +18,7 @@ namespace demo
     class scope
     {
     private:
+        static constexpr bool log_completions{false};
         struct env
         {
             scope* self;
@@ -46,12 +47,12 @@ namespace demo
             }
             auto set_value() && noexcept -> void
             {
-                std::cout << "demo::scope::set_value()\n";
+                if (log_completions) std::cout << "demo::scope::set_value()\n";
                 this->complete();
             }
             auto set_stopped() && noexcept -> void
             {
-                std::cout << "demo::scope::set_stopped()\n";
+                if (log_completions) std::cout << "demo::scope::set_stopped()\n";
                 this->complete();
             }
             auto complete() -> void

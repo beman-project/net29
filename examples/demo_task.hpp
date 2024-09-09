@@ -93,6 +93,7 @@ namespace demo
     template <typename Result = void>
     struct task
     {
+        enum class stop_state { running, stopping, stopped };
         template <typename Promise, ex::sender Sender>
         struct sender_awaiter
         {
@@ -174,6 +175,7 @@ namespace demo
         struct promise_type
             : task_promise_result<Result>
         {
+            task::stop_state        stop_state{task::stop_state::running};
             ex::inplace_stop_source stop_source{};
 
             auto initial_suspend() -> ::std::suspend_always { return {}; }
@@ -205,10 +207,15 @@ namespace demo
             using operation_state_concept = ex::operation_state_t;
             struct callback_t
             {
-                promise_type* promise;
+                state* object;
                 auto operator()() const
                 {
-                    this->promise->stop_source.request_stop();
+                    auto state{this->object};
+                    state->callback.reset();
+                    state->handle->stop_state = task::stop_state::stopping;
+                    state->handle->stop_source.request_stop();
+                    if (state->handle->stop_state == task::stop_state::stopped)
+                        this->object->handle->state->complete_stopped();
                 }
             };
             using stop_token = decltype(ex::get_stop_token(ex::get_env(::std::declval<Receiver>())));
@@ -228,7 +235,7 @@ namespace demo
             auto start() & noexcept -> void
             {
                 this->handle->state = this;
-                this->callback.emplace(ex::get_stop_token(ex::get_env(this->receiver)), callback_t{handle.get()});
+                this->callback.emplace(ex::get_stop_token(ex::get_env(this->receiver)), callback_t{this});
                 std::coroutine_handle<promise_type>::from_promise(*this->handle).resume();
             }
 
@@ -286,8 +293,11 @@ template <typename Result>
 auto
 demo::task<Result>::sender_awaiter<Promise, Sender>::stop() ->void
 {
-    std::cout << "demo::task::stop() received\n";
-    //this->handle.promise().state->complete_stopped();
+    if (::std::exchange(this->handle.promise().stop_state, task::stop_state::stopped)
+        == task::stop_state::running)
+    {
+        this->handle.promise().state->complete_stopped();
+    }
 }
 
 // ----------------------------------------------------------------------------
