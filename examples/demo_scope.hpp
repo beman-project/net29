@@ -22,7 +22,10 @@ namespace demo
         {
             scope* self;
 
-            auto query(ex::get_stop_token_t) const { return this->self->source.get_token(); }
+            auto query(ex::get_stop_token_t) const noexcept
+            {
+                return this->self->source.get_token();
+            }
         };
 
         struct job_base
@@ -58,7 +61,7 @@ namespace demo
                     self->complete();
                 }
             }
-            auto get_env() noexcept -> env { return {this->self}; }
+            auto get_env() const noexcept -> env { return {this->self}; }
         };
 
         template <typename Sender>
@@ -86,6 +89,12 @@ namespace demo
         {
             ++this->count;
             new job<Sender>(this, std::forward<Sender>(sender));
+        }
+        auto stop()
+        {
+            std::cout << "demo::scope received stop\n";
+            this->source.request_stop();
+            std::cout << "demo::scope stop requested\n";
         }
     };
 }

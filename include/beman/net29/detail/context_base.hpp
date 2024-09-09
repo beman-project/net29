@@ -23,6 +23,12 @@ namespace beman::net29::detail
 
 struct beman::net29::detail::context_base
 {
+    struct task
+    {
+        task* next;
+        virtual auto complete() -> void = 0;
+    };
+
     using accept_operation = ::beman::net29::detail::io_operation<
         ::std::tuple<::beman::net29::detail::endpoint,
                      ::socklen_t,
@@ -57,6 +63,7 @@ struct beman::net29::detail::context_base
     virtual auto run_one() -> ::std::size_t = 0;
 
     virtual auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void = 0;
+    virtual auto schedule(::beman::net29::detail::context_base::task*) -> void = 0;
     virtual auto accept(::beman::net29::detail::context_base::accept_operation*)
         -> ::beman::net29::detail::submit_result = 0;
     virtual auto connect(::beman::net29::detail::context_base::connect_operation*)

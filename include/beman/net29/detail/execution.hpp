@@ -51,6 +51,7 @@ namespace beman::net29::detail::ex
     using ::beman::execution26::start_t;
     using ::beman::execution26::start;
 
+    using ::beman::execution26::read_env;
     using ::beman::execution26::detail::write_env;
     using ::beman::execution26::just;
     using ::beman::execution26::just_error;

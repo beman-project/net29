@@ -96,6 +96,11 @@ namespace demo
         template <typename Promise, ex::sender Sender>
         struct sender_awaiter
         {
+            struct env
+            {
+                sender_awaiter* awaiter{};
+                auto query(ex::get_stop_token_t) const noexcept -> ex::inplace_stop_token;
+            };
             struct receiver
             {
                 using receiver_concept = ex::receiver_t;
@@ -121,6 +126,7 @@ namespace demo
                 {
                     this->awaiter->stop();
                 }
+                auto get_env() const noexcept -> env { return {this->awaiter}; }
             };
             using value_type
                 = ex::value_types_of_t<
@@ -138,6 +144,7 @@ namespace demo
             }
 
             auto stop() { /*-dk:TODO: forward stopped result*/ }
+            auto get_token() const noexcept -> ex::inplace_stop_token;
             constexpr auto await_ready() const noexcept -> bool { return false; }
             auto await_suspend(::std::coroutine_handle<Promise> handle) -> void
             {
@@ -167,6 +174,8 @@ namespace demo
         struct promise_type
             : task_promise_result<Result>
         {
+            ex::inplace_stop_source stop_source{};
+
             auto initial_suspend() -> ::std::suspend_always { return {}; }
             auto final_suspend() noexcept -> final_awaiter { return {this}; }
             auto get_return_object() -> task
@@ -193,10 +202,22 @@ namespace demo
         struct state
             : task_state_base<::std::decay_t<Result>>
         {
-            using operation_state_concept = ::beman::net29::detail::ex::operation_state_t;
+            using operation_state_concept = ex::operation_state_t;
+            struct callback_t
+            {
+                promise_type* promise;
+                auto operator()() const
+                {
+                    ::std::cout << "task: requesting stop\n";
+                    this->promise->stop_source.request_stop();
+                }
+            };
+            using stop_token = decltype(ex::get_stop_token(ex::get_env(::std::declval<Receiver>())));
+            using stop_callback = ex::stop_callback_for_t<stop_token, callback_t>;
 
-            unique_handle            handle;
-            ::std::decay_t<Receiver> receiver;
+            unique_handle                  handle;
+            ::std::decay_t<Receiver>       receiver;
+            ::std::optional<stop_callback> callback;
 
             template <typename R>
             state(unique_handle handle, R&& receiver)
@@ -208,6 +229,7 @@ namespace demo
             auto start() & noexcept -> void
             {
                 this->handle->state = this;
+                this->callback.emplace(ex::get_stop_token(ex::get_env(this->receiver)), callback_t{handle.get()});
                 std::coroutine_handle<promise_type>::from_promise(*this->handle).resume();
             }
 
@@ -247,6 +269,17 @@ namespace demo
             );
         }
     };
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Result>
+    template <typename Promise, demo::ex::sender Sender>
+auto
+demo::task<Result>::sender_awaiter<Promise, Sender>::env::query(demo::ex::get_stop_token_t) const noexcept
+    -> demo::ex::inplace_stop_token
+{
+    return this->awaiter->handle.promise().stop_source.get_token();
 }
 
 // ----------------------------------------------------------------------------

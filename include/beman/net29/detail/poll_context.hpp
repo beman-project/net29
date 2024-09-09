@@ -50,7 +50,8 @@ struct beman::net29::detail::poll_context final
     ::beman::net29::detail::container<::beman::net29::detail::poll_record> d_sockets;
     ::std::vector<::pollfd>                         d_poll;
     ::std::vector<::beman::net29::detail::io_base*> d_outstanding;
-    timer_priority_t d_timeouts;
+    timer_priority_t                                d_timeouts;
+    ::beman::net29::detail::context_base::task*     d_tasks{};
 
     auto make_socket(int fd) -> ::beman::net29::detail::socket_id override final
     {
@@ -109,6 +110,17 @@ struct beman::net29::detail::poll_context final
         }
     }
 
+    auto process_task() -> ::std::size_t
+    {
+        if (this->d_tasks)
+        {
+            auto* task{this->d_tasks};
+            this->d_tasks = task->next;
+            task->complete();
+            return 1u;
+        }
+        return 0u;
+    }
     auto process_timeout(auto const& now) -> ::std::size_t
     {
         if (!this->d_timeouts.empty() && ::std::get<0>(*this->d_timeouts.front()) <= now)
@@ -125,7 +137,9 @@ struct beman::net29::detail::poll_context final
     auto run_one() -> ::std::size_t override final
     {
         auto now{::std::chrono::system_clock::now()};
-        if (0u < this->process_timeout(now))
+        if (0u < this->process_timeout(now)
+            || 0 < this->process_task()
+            )
         {
             return 1u;
         }
@@ -197,7 +211,13 @@ struct beman::net29::detail::poll_context final
 
     auto cancel(::beman::net29::detail::io_base*, ::beman::net29::detail::io_base*) -> void override final
     {
+        std::cout << "TODO: setup up poll_context::cancel\n";
         //-dk:TODO
+    }
+    auto schedule(::beman::net29::detail::context_base::task* task) -> void override
+    {
+        task->next = this->d_tasks;
+        this->d_tasks = task;
     }
     auto accept(::beman::net29::detail::context_base::accept_operation* completion)
         -> ::beman::net29::detail::submit_result override final

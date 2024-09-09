@@ -57,10 +57,13 @@ int main()
         scope.spawn(std::invoke([](auto& scope, auto& context)->demo::task<>{
             net::ip::tcp::endpoint endpoint(net::ip::address_v4::any(), 12345);
             net::ip::tcp::acceptor acceptor(context, endpoint);
-            auto[stream, ep] = co_await net::async_accept(acceptor);
 
-            std::cout << "ep=" << ep << "\n";
-            scope.spawn(make_client(std::move(stream)));
+            while (true)
+            {
+                auto[stream, ep] = co_await net::async_accept(acceptor);
+                std::cout << "ep=" << ep << "\n";
+                scope.spawn(make_client(std::move(stream)));
+            }
         }, scope, context));
 
         context.run();

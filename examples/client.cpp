@@ -13,6 +13,8 @@ namespace net = ::beman::net29;
 
 // ----------------------------------------------------------------------------
 
+namespace { auto use(auto&&...) -> void {} }
+
 auto main() -> int
 {
     using namespace std::chrono_literals;
@@ -20,6 +22,33 @@ auto main() -> int
     net::io_context context;
     demo::scope     scope;
 
+    scope.spawn(
+        ex::read_env(ex::get_stop_token)
+        | ex::then([](auto t){
+            use(t);
+            //static_assert(std::same_as<void, decltype(t)>);
+        })
+    );
+
+    auto stop = [&scope, &context]{
+        scope.spawn(
+            ex::schedule(context.get_scheduler())
+            | ex::then([]{ std::cout << "sending stop\n"; })
+            | ex::then([&scope]{ scope.stop(); })
+        );
+    };
+
+    scope.spawn(std::invoke(
+        [](auto& context, auto stop)->demo::task<> {
+            std::cout << "timer task\n";
+            for (int i{}; i < 1; ++i)
+            {
+                std::cout << "i=" << i << "\n";
+                co_await net::resume_after(context.get_scheduler(), 1s);
+            }
+            std::cout << "show cancel the scope!\n";
+            stop();
+        }, context, stop));
     scope.spawn(std::invoke([](auto& context)->demo::task<> {
         on_exit msg("connecting client done");
         net::ip::tcp::endpoint ep(net::ip::address_v4::loopback(), 12345);
@@ -58,8 +87,8 @@ auto main() -> int
             {
                 std::string_view response(buffer, size);
                 std::cout << "received='" << response << "'\n";
-                if (response.find('\n') != response.npos)
-                    break;
+                //if (response.find('\n') != response.npos)
+                //    break;
             }
         }
     }, context)
