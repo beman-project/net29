@@ -13,10 +13,20 @@ set(LIBRARIES
 include(GNUInstallDirs)
 
 set(EXAMPLES
+  http-server
   client
   server
   task
 )
+
+set(DATA
+   index.html
+   favicon.ico
+)
+
+foreach(FILE ${DATA})
+  file(GENERATE OUTPUT data/${FILE} INPUT data/${FILE})
+endforeach()
 
 foreach(EXAMPLE ${EXAMPLES})
   add_executable(${EXAMPLE})

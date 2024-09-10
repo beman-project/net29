@@ -191,7 +191,8 @@ namespace demo
             template <ex::sender Sender>
             auto await_transform(Sender&& sender)
             {
-                return sender_awaiter<promise_type, ::std::remove_cvref_t<Sender>>(sender);
+                return sender_awaiter<promise_type, ::std::remove_cvref_t<Sender>>
+                     (::std::forward<Sender>(sender));
             }
         };
 

@@ -41,12 +41,9 @@ struct beman::net29::detail::poll_context final
 {
     using time_t = ::std::chrono::system_clock::time_point;
     using timer_node_t = ::beman::net29::detail::context_base::resume_at_operation;
+    struct get_time { auto operator()(auto* t) const -> time_t { return ::std::get<0>(*t); } };
     using timer_priority_t
-        = ::beman::net29::detail::sorted_list<
-            timer_node_t,
-            decltype([](time_t t0, time_t t1){ return t0 < t1; }),
-            decltype([](timer_node_t* t){ return ::std::get<0>(*t); })
-        >;
+        = ::beman::net29::detail::sorted_list< timer_node_t, ::std::less<>, get_time>;
     ::beman::net29::detail::container<::beman::net29::detail::poll_record> d_sockets;
     ::std::vector<::pollfd>                         d_poll;
     ::std::vector<::beman::net29::detail::io_base*> d_outstanding;
