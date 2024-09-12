@@ -44,7 +44,7 @@ ifeq ($(SANITIZER),lsan)
     SAN_FLAGS = -fsanitize=leak
 endif
 
-default: test
+default: build
 
 all: $(SANITIZERS)
 

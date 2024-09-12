@@ -13,6 +13,7 @@ set(LIBRARIES
 include(GNUInstallDirs)
 
 set(EXAMPLES
+  empty
   server
   http-server
   client

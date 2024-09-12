@@ -21,7 +21,7 @@ using namespace std::chrono_literals;
 
 std::unordered_map<std::string, std::string> files{
     {"/", "examples/data/index.html"},
-    {"/favicon.ico", "examples/data/favicon.icon"},
+    {"/favicon.ico", "examples/data/favicon.ico"},
 };
 
 auto process_request(auto& stream, std::string request) -> demo::task<>
@@ -67,7 +67,7 @@ auto main() -> int
 {
     net::io_context context;
     demo::scope     scope;
-    net::ip::tcp::endpoint ep(net::ip::address_v4::any(), 12346);
+    net::ip::tcp::endpoint ep(net::ip::address_v4::any(), 12345);
     net::ip::tcp::acceptor server(context, ep);
     std::cout << "listening on " << ep << "\n";
 
