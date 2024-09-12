@@ -176,7 +176,7 @@ struct demo::into_error_t::sender
 };
 
 template <demo::ex::sender Sender, typename Fun>
-auto demo::into_error_t::operator()(Sender&& sender, Fun&& fun) const
+inline auto demo::into_error_t::operator()(Sender&& sender, Fun&& fun) const
     -> demo::into_error_t::sender<::std::remove_cvref_t<Sender>, ::std::remove_cvref_t<Fun>>
 {
     return {::std::forward<Sender>(sender), ::std::forward<Fun>(fun)};
@@ -379,7 +379,7 @@ struct demo::when_any_t::sender
 
 template <demo::ex::sender... Sender>
     requires (0u < sizeof...(Sender))
-auto demo::when_any_t::operator()(Sender&&...sender) const
+inline auto demo::when_any_t::operator()(Sender&&...sender) const
     -> ::demo::when_any_t::sender<Sender...>
 {
     return {::std::forward<Sender>(sender)...};
