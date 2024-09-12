@@ -6,6 +6,7 @@
 
 #include <beman/net29/detail/io_base.hpp>
 #include <beman/net29/detail/execution.hpp>
+#include <beman/net29/detail/stop_token.hpp>
 #include <atomic>
 #include <optional>
 #include <type_traits>
@@ -150,6 +151,7 @@ struct beman::net29::detail::sender_state
                 ::beman::net29::detail::ex::get_env(this->d_receiver)
             )
         );
+        static_assert(not std::same_as<ex::never_stop_token, void>);
         ++this->d_outstanding;
         this->d_callback.emplace(token, cancel_callback(this));
         if (token.stop_requested())

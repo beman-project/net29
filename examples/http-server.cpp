@@ -3,6 +3,7 @@
 
 #include <beman/net29/net.hpp>
 #include <beman/execution26/execution.hpp>
+#include "demo_algorithm.hpp"
 #include "demo_scope.hpp"
 #include "demo_task.hpp"
 #include <iostream>
@@ -14,12 +15,13 @@
 
 namespace ex  = beman::execution26;
 namespace net = beman::net29;
+using namespace std::chrono_literals;
 
 // ----------------------------------------------------------------------------
 
 std::unordered_map<std::string, std::string> files{
-    {"/", "data/index.html"},
-    {"/favicon.ico", "data/favicon.icon"},
+    {"/", "examples/data/index.html"},
+    {"/favicon.ico", "examples/data/favicon.icon"},
 };
 
 auto process_request(auto& stream, std::string request) -> demo::task<>
@@ -42,7 +44,7 @@ auto process_request(auto& stream, std::string request) -> demo::task<>
         << "Content-Length: " << body.size() << "\r\n\r\n"
         << body;
     auto response(out.str());
-    auto n = co_await net::async_send(stream, net::buffer(response));
+    co_await net::async_send(stream, net::buffer(response));
 }
 
 auto make_client(auto stream) -> demo::task<>
@@ -69,14 +71,15 @@ auto main() -> int
     net::ip::tcp::acceptor server(context, ep);
     std::cout << "listening on " << ep << "\n";
 
-    scope.spawn(std::invoke([](auto& scope, auto& server) -> demo::task<> {
+    scope.spawn(std::invoke([](auto, auto& scope, auto& server) -> demo::task<> {
         while (true)
         {
             auto[stream, address] = co_await net::async_accept(server);
             std::cout << "received connection from " << address << "\n";
             scope.spawn(make_client(std::move(stream)));
+
         }
-    }, scope, server));
+    }, context.get_scheduler(), scope, server));
 
     context.run();
 }

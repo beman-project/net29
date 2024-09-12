@@ -7,17 +7,19 @@
 #include <expected>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
+#include "demo_algorithm.hpp"
 #include "demo_scope.hpp"
 #include "demo_task.hpp"
 
 namespace ex  = ::beman::execution26;
 namespace net = ::beman::net29;
+using namespace std::chrono_literals;
 
 auto use(auto&&) -> void {}
 
 ///timeout(time, sender, ....)
 ///{
-///    return when_any(sender..., resume_after(time) | into_erro())
+///    return when_any(sender..., resume_after(time) | into_error())
 ///}
 
 auto make_client( auto client) -> demo::task<void>
@@ -34,7 +36,8 @@ auto make_client( auto client) -> demo::task<void>
             std::string_view message(+buffer, size);
             std::cout << "received<" << size << ">(" << message << ")\n";
             auto ssize = co_await net::async_send(client, net::const_buffer(buffer, size));
-            std::cout << "sent<ssize>(" << ::std::string_view(buffer, ssize) << ")\n";
+            std::cout << "sent<" << ssize << "/" << message.size() << ">("
+                      << ::std::string_view(buffer, ssize) << ")\n";
         }
         std::cout << "client done\n";
     }
@@ -43,6 +46,14 @@ auto make_client( auto client) -> demo::task<void>
         std::cerr << "ERROR: " << e.what() << '\n';
     }
 }
+
+struct receiver
+{
+    using receiver_concept = ex::receiver_t;
+    auto set_error(auto&&) && noexcept -> void {}
+    auto set_stopped() && noexcept -> void {}
+    auto set_value(auto&&...) && noexcept -> void {}
+};
 
 int main()
 {
@@ -60,30 +71,28 @@ int main()
 
             while (true)
             {
-                auto[stream, ep] = co_await net::async_accept(acceptor);
-                std::cout << "ep=" << ep << "\n";
-                scope.spawn(make_client(std::move(stream)));
+                try
+                {
+                    auto[stream, ep] = co_await demo::when_any(
+                            net::async_accept(acceptor),
+                            demo::into_error(
+                                net::resume_after(context.get_scheduler(), 1s),
+                                [](auto&&...){ return ::std::error_code(); }
+                            )
+                        );
+                    ::std::cout << "when_any is done\n";
+
+                    std::cout << "ep=" << ep << "\n";
+                    scope.spawn(make_client(std::move(stream)));
+                }
+                catch(...)
+                {
+                    std::cout << "timer fired\n";
+                }
             }
         }, scope, context));
 
         context.run();
-
-#if 0
-        scope.spawn(std::invoke([](auto scheduler)->exec::task<void>{
-            using namespace std::chrono_literals;
-            for (int i{}; i < 100; ++i)
-            {
-                co_await net::async_resume_after(scheduler, 1'000'000us);
-                std::cout << "relative timer fired\n";
-                co_await net::async_resume_at(scheduler, ::std::chrono::system_clock::now() + 1s);
-                std::cout << "absolute timer fired\n";
-            }
-        }, context.get_scheduler()));
-
-        std::cout << "running context\n";
-        context.run();
-        std::cout << "running done\n";
-#endif
     }
     catch (std::exception const& ex)
     {

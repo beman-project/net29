@@ -10,6 +10,7 @@
 
 namespace beman::net29::detail::ex
 {
+    using ::beman::execution26::never_stop_token;
     using ::beman::execution26::inplace_stop_source;
     using ::beman::execution26::inplace_stop_token;
     using ::beman::execution26::stop_callback_for_t;

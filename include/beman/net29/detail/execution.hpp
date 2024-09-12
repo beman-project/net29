@@ -8,12 +8,24 @@
 
 // ----------------------------------------------------------------------------
 
+namespace beman::net29::detail::ex::detail
+{
+    using ::beman::execution26::detail::type_list;
+    using ::beman::execution26::detail::variant_or_empty;
+    using ::beman::execution26::detail::meta::combine;
+    using ::beman::execution26::detail::meta::filter;
+    using ::beman::execution26::detail::meta::unique;
+    using ::beman::execution26::detail::meta::transform;
+}
+
 namespace beman::net29::detail::ex
 {
     using ::beman::execution26::completion_signatures;
+    using ::beman::execution26::detail::decayed_tuple;
 
     using ::beman::execution26::get_env;
     using ::beman::execution26::empty_env;
+    using ::beman::execution26::env_of_t;
     using ::beman::execution26::value_types_of_t;
     using ::beman::execution26::error_types_of_t;
 
