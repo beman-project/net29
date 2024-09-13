@@ -22,6 +22,7 @@ using namespace std::chrono_literals;
 std::unordered_map<std::string, std::string> files{
     {"/", "examples/data/index.html"},
     {"/favicon.ico", "examples/data/favicon.ico"},
+    {"/logo.png", "examples/data/logo.png"},
 };
 
 auto process_request(auto& stream, std::string request) -> demo::task<>
