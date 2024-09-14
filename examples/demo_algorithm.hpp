@@ -1,5 +1,4 @@
 // examples/demo_algorithm.hpp                                        -*-C++-*-
-
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #ifndef INCLUDED_EXAMPLES_DEMO_ALGORITHM
@@ -15,9 +14,6 @@
 #include <iostream> //-dk:TODO remove
 
 // ----------------------------------------------------------------------------
-
-template <typename T>
-constexpr bool is_tuple = requires{ T::tuple_size; };
 
 namespace demo
 {
