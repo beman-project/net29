@@ -333,11 +333,11 @@ struct demo::when_any_t::state<::std::index_sequence<I...>, Receiver, Value, Err
     state(R&& receiver, P&& s)
         : state_value<Receiver, value_type, error_type>(sizeof...(Sender), ::std::forward<R>(receiver))
         , states{demo::ex::connect(
-            ::std::forward_like<P>(s.template get<I>()),
+            ::beman::net29::detail::ex::detail::forward_like<P>(s.template get<I>()),
             receiver_type<I>{this}
         )...}
     {
-    };
+    }
     state(state&&) = delete;
     auto start() & noexcept -> void
     {
