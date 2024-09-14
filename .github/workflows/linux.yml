@@ -1,0 +1,34 @@
+# .github/workflows/linux.yml
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+name: Linux Build
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "include/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/linux.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "include/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/linux.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizer: [none, asan, usan, tsan]
+        compiler: [g++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux ${{ matrix.compiler }} ${{ matrix.sanitizer }}
+        run: make ${{ matrix.sanitizer }} CXX=${{ matrix.compiler }}
