@@ -12,11 +12,10 @@ set(LIBRARIES
 
 include(GNUInstallDirs)
 
-set(EXAMPLES http-server)
 set(EXAMPLES
-  http-server
   empty
   server
+  http-server
   client
   task
 )
