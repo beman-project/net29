@@ -25,18 +25,17 @@ namespace demo
     template <typename T>
     struct task_state_base
     {
-        ::std::optional<T> result;
+        ::std::optional<T> task_result;
         virtual auto complete_value() -> void = 0;
         virtual auto complete_error(::std::exception_ptr) -> void = 0;
         virtual auto complete_stopped() -> void = 0;
 
         template <typename Receiver>
-        auto set_value(Receiver& receiver)
+        auto complete_set_value(Receiver& receiver)
         {
             ::beman::net29::detail::ex::set_value(
-                ::std::move(receiver),
-                ::std::move(*this->result)
-             );
+                ::std::move(receiver), ::std::move(*this->task_result)
+            );
         }
     };
     template <>
@@ -47,7 +46,7 @@ namespace demo
         virtual auto complete_stopped() -> void = 0;
 
         template <typename Receiver>
-        auto set_value(Receiver& receiver)
+        auto complete_set_value(Receiver& receiver)
         {
             ::beman::net29::detail::ex::set_value(::std::move(receiver));
         }
@@ -73,7 +72,7 @@ namespace demo
         template <typename T>
         auto return_value(T&& r) -> void
         {
-            this->state->result.emplace(std::forward<T>(r));
+            this->state->task_result.emplace(std::forward<T>(r));
         }
     };
     template <>
@@ -242,7 +241,7 @@ namespace demo
 
             auto complete_value() -> void override
             {
-                this->set_value(this->receiver);
+                this->complete_set_value(this->receiver);
             }
             auto complete_error(::std::exception_ptr error) -> void override
             {
@@ -256,7 +255,6 @@ namespace demo
                 ::beman::net29::detail::ex::set_stopped(::std::move(this->receiver));
             }
         };
-
 
         unique_handle handle;
 

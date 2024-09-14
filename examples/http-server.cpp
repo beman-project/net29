@@ -48,11 +48,25 @@ auto process_request(auto& stream, std::string request) -> demo::task<>
     co_await net::async_send(stream, net::buffer(response));
 }
 
-auto make_client(auto stream) -> demo::task<>
+auto now = []{ return std::chrono::system_clock::now(); };
+
+auto timeout(auto scheduler, auto duration, auto sender)
+{
+    return demo::when_any(
+        std::move(sender),
+        net::resume_after(scheduler, duration)
+        | ex::then([]() { std::cout << "then: timeout=" << now() << "\n"; })
+        | demo::into_error([]{ return std::error_code(); })
+        );
+}
+
+auto make_client(auto scheduler, auto stream) -> demo::task<>
 {
     char        buffer[16];
     std::string request;
-    for (std::size_t n; 0 < (n = co_await net::async_receive(stream, net::buffer(buffer))); )
+    try{
+    std::cout << "client-start=" << now() << "\n";
+    while (auto n = co_await timeout(scheduler, 3s, net::async_receive(stream, net::buffer(buffer))))
     {
         std::string_view sv(buffer, n);
         request += sv; 
@@ -60,6 +74,11 @@ auto make_client(auto stream) -> demo::task<>
             co_await process_request(stream, std::move(request));
             break;
         }
+    }
+    }
+    catch (...)
+    {
+        std::cout << "ex: timeout=" << now() << "\n";
     }
     std::cout << "client done\n";
 }
@@ -72,12 +91,12 @@ auto main() -> int
     net::ip::tcp::acceptor server(context, ep);
     std::cout << "listening on " << ep << "\n";
 
-    scope.spawn(std::invoke([](auto, auto& scope, auto& server) -> demo::task<> {
+    scope.spawn(std::invoke([](auto scheduler, auto& scope, auto& server) -> demo::task<> {
         while (true)
         {
             auto[stream, address] = co_await net::async_accept(server);
             std::cout << "received connection from " << address << "\n";
-            scope.spawn(make_client(std::move(stream)));
+            scope.spawn(make_client(scheduler, std::move(stream)));
 
         }
     }, context.get_scheduler(), scope, server));

@@ -16,8 +16,8 @@ set(TARGETS_EXPORT_NAME ${CMAKE_PROJECT_NAME}Targets)
 include(FetchContent)
 FetchContent_Declare(
     execution26
-    # for local development, use SOURCE_DIR <path-to>/execution26
-    GIT_REPOSITORY https://github.com/beman-project/execution26
+    SOURCE_DIR /Users/kuehl/src/execution26
+    #GIT_REPOSITORY https://github.com/beman-project/execution26
     GIT_TAG df83e34
 )
 FetchContent_MakeAvailable(execution26)
