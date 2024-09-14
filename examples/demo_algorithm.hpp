@@ -1,4 +1,5 @@
 // examples/demo_algorithm.hpp                                        -*-C++-*-
+
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #ifndef INCLUDED_EXAMPLES_DEMO_ALGORITHM
@@ -14,6 +15,9 @@
 #include <iostream> //-dk:TODO remove
 
 // ----------------------------------------------------------------------------
+
+template <typename T>
+constexpr bool is_tuple = requires{ T::tuple_size; };
 
 namespace demo
 {
@@ -182,6 +186,12 @@ inline auto demo::into_error_t::operator()(Sender&& sender, Fun&& fun) const
     return {::std::forward<Sender>(sender), ::std::forward<Fun>(fun)};
 }
 
+template <typename Fun>
+inline auto demo::into_error_t::operator()(Fun&& fun) const
+{
+    return ex::detail::sender_adaptor{*this, fun};
+}
+
 // ----------------------------------------------------------------------------
 
 template <typename Receiver>
@@ -226,7 +236,10 @@ struct demo::when_any_t::state_value
     ::std::optional<Value> value{};
 
     template <typename R>
-    state_value(::std::size_t total, R&& receiver): state_base<Receiver>{total, ::std::forward<R>(receiver)} {}
+    state_value(::std::size_t total, R&& receiver)
+        : state_base<Receiver>{total, ::std::forward<R>(receiver)}
+    {
+    }
 
     auto notify_done() -> void override
     {
@@ -236,8 +249,11 @@ struct demo::when_any_t::state_value
         }
         else if (this->value)
         {
-            std::visit([this](auto&&... a){
-                ::demo::ex::set_value(::std::move(this->receiver), ::std::move(a)...);
+            std::visit([this](auto&& m) {
+                (void)this;
+                ::std::apply([this](auto&&... a) {
+                    ::demo::ex::set_value(::std::move(this->receiver), ::std::move(a)...);
+                }, m);
             }, *this->value);
         }
         else
@@ -275,7 +291,6 @@ struct demo::when_any_t::receiver
     {
         if (this->state->complete())
         {
-            (void)error;
             this->state->error.emplace(::std::forward<E>(error));
         }
         this->state->ready();
@@ -353,9 +368,6 @@ struct demo::when_any_t::sender
     auto connect(Receiver&& receiver) &&
         -> state<::std::index_sequence_for<Sender...>,
                  ::std::remove_cvref_t<Receiver>,
-#if 0
-                int,
-#else
                  demo::detail::variant_from_list_t<
                     ex::detail::transform<demo::detail::decayed_set_value_t,
                         demo::detail::make_type_list_t<
@@ -365,7 +377,6 @@ struct demo::when_any_t::sender
                         >
                     >
                  >,
-#endif
                  demo::detail::variant_from_list_t<
                     ex::detail::filter<demo::detail::is_set_error,
                                        decltype(ex::get_completion_signatures(*this, ex::get_env(receiver)))

@@ -16,6 +16,7 @@ namespace beman::net29::detail::ex::detail
     using ::beman::execution26::detail::meta::filter;
     using ::beman::execution26::detail::meta::unique;
     using ::beman::execution26::detail::meta::transform;
+    using ::beman::execution26::detail::sender_adaptor;
 }
 
 namespace beman::net29::detail::ex
