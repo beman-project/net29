@@ -48,14 +48,11 @@ auto process_request(auto& stream, std::string request) -> demo::task<>
     co_await net::async_send(stream, net::buffer(response));
 }
 
-auto now = []{ return std::chrono::system_clock::now(); };
-
 auto timeout(auto scheduler, auto duration, auto sender)
 {
     return demo::when_any(
         std::move(sender),
         net::resume_after(scheduler, duration)
-        | ex::then([]() { std::cout << "then: timeout=" << now() << "\n"; })
         | demo::into_error([]{ return std::error_code(); })
         );
 }
@@ -65,20 +62,19 @@ auto make_client(auto scheduler, auto stream) -> demo::task<>
     char        buffer[16];
     std::string request;
     try{
-    std::cout << "client-start=" << now() << "\n";
-    while (auto n = co_await timeout(scheduler, 3s, net::async_receive(stream, net::buffer(buffer))))
-    {
-        std::string_view sv(buffer, n);
-        request += sv; 
-        if (request.npos != sv.find("\r\n\r\n")) {
-            co_await process_request(stream, std::move(request));
-            break;
+        while (auto n = co_await timeout(scheduler, 3s, net::async_receive(stream, net::buffer(buffer))))
+        {
+            std::string_view sv(buffer, n);
+            request += sv; 
+            if (request.npos != sv.find("\r\n\r\n")) {
+                co_await process_request(stream, std::move(request));
+                break;
+            }
         }
-    }
     }
     catch (...)
     {
-        std::cout << "ex: timeout=" << now() << "\n";
+        std::cout << "ex: timeout\n";
     }
     std::cout << "client done\n";
 }

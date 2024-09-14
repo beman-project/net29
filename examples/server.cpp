@@ -4,7 +4,6 @@
 #include <iostream>
 #include <functional>
 #include <string_view>
-#include <expected>
 #include <beman/execution26/execution.hpp>
 #include <beman/net29/net.hpp>
 #include "demo_algorithm.hpp"
