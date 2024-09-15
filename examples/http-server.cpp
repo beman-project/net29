@@ -7,7 +7,6 @@
 #include "demo_scope.hpp"
 #include "demo_task.hpp"
 #include <iostream>
-#include <expected>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -54,25 +53,28 @@ auto timeout(auto scheduler, auto duration, auto sender)
     return demo::when_any(
         std::move(sender),
         net::resume_after(scheduler, duration)
-            | demo::into_error([]{ return std::error_code(); })
-        )
-        ;
+        | demo::into_error([]{ return std::error_code(); })
+        );
 }
 
 auto make_client(auto scheduler, auto stream) -> demo::task<>
 {
     char        buffer[16];
     std::string request;
-    while (auto n = co_await
-        (timeout(scheduler, 2s, net::async_receive(stream, net::buffer(buffer)))
-        | demo::into_expected()))
-    {
-        std::string_view sv(buffer, n.value());
-        request += sv; 
-        if (request.npos != sv.find("\r\n\r\n")) {
-            co_await process_request(stream, std::move(request));
-            break;
+    try{
+        while (auto n = co_await timeout(scheduler, 3s, net::async_receive(stream, net::buffer(buffer))))
+        {
+            std::string_view sv(buffer, n);
+            request += sv; 
+            if (request.npos != sv.find("\r\n\r\n")) {
+                co_await process_request(stream, std::move(request));
+                break;
+            }
         }
+    }
+    catch (...)
+    {
+        std::cout << "ex: timeout\n";
     }
     std::cout << "client done\n";
 }
