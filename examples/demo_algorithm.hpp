@@ -11,6 +11,11 @@
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <version>
+#if 202202L <= __cpp_lib_expected
+#    include<expected>
+#endif
+
 #include <iostream> //-dk:TODO remove
 
 // ----------------------------------------------------------------------------
@@ -70,6 +75,13 @@ namespace demo::detail
     template <typename T>
     using decayed_set_value_t = typename decayed_set_value<T>::type;
 
+    template <typename... T>
+    struct decayed_tuple_or_single { using type = ::std::tuple<::std::decay_t<T>...>; };
+    template <typename T>
+    struct decayed_tuple_or_single<T> { using type = ::std::decay_t<T>; };
+    template <typename... T>
+    using decayed_tuple_or_single_t = typename decayed_tuple_or_single<T...>::type;
+
     template <typename> struct make_type_list;
     template <template <typename> class L, typename... T>
     struct make_type_list<L<T...>>
@@ -98,6 +110,16 @@ namespace demo
             -> sender<::std::remove_cvref_t<Sender>, ::std::remove_cvref_t<Fun>>;
     };
     inline constexpr into_error_t into_error{};
+
+#if 202202L <= __cpp_lib_expected
+    struct into_expected_t
+    {
+        auto operator()() const;
+        template <ex::sender Sender>
+        auto operator()(Sender&&) const;
+    };
+    inline constexpr into_expected_t into_expected{};
+#endif
 
     struct when_any_t
     {
@@ -187,6 +209,38 @@ inline auto demo::into_error_t::operator()(Fun&& fun) const
 {
     return ex::detail::sender_adaptor{*this, fun};
 }
+
+// ----------------------------------------------------------------------------
+
+#if 202202L <= __cpp_lib_expected
+inline auto demo::into_expected_t::operator()() const
+{
+    return beman::net29::detail::ex::detail::sender_adaptor{*this};
+}
+template <beman::net29::detail::ex::sender Sender>
+inline auto demo::into_expected_t::operator()(Sender&& s) const
+{
+    using value_type = ex::value_types_of_t<
+        Sender,
+        ex::empty_env,
+        demo::detail::decayed_tuple_or_single_t,
+        std::type_identity_t
+        >;
+    using error_type = ex::error_types_of_t<Sender>;
+    return ::std::forward<Sender>(s)
+        | beman::net29::detail::ex::then([]<typename... A>(A&&... a)noexcept{
+            return std::expected<value_type, error_type>(
+                ::std::in_place_t{}, ::std::forward<A>(a)...
+            );
+        })
+        | beman::net29::detail::ex::upon_error([]<typename E>(E&& e)noexcept{
+            return std::expected<value_type, error_type>(
+                ::std::unexpect_t{}, ::std::forward<E>(e)
+            );
+        })
+        ;
+}
+#endif
 
 // ----------------------------------------------------------------------------
 
