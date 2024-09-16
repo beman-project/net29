@@ -4,6 +4,7 @@
 #include <beman/net29/net.hpp>
 #include <beman/execution26/execution.hpp>
 #include "demo_algorithm.hpp"
+#include "demo_error.hpp"
 #include "demo_scope.hpp"
 #include "demo_task.hpp"
 #include <iostream>
