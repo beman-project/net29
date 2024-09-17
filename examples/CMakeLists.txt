@@ -18,6 +18,7 @@ set(EXAMPLES
   server
   client
   task
+  cppcon-2024
 )
 
 set(DATA
