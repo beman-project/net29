@@ -5,13 +5,34 @@ It is based on [P2762](http://wg21.link/p2762). Both the proposal
 and the implementation are in an early state although basic
 functionality is provided.
 
-`beman.net29` builds on top of [`beman.execution26`](). The
+`beman.net29` builds on top of [`beman.execution26`](https://github.com/beman-project/execution26). The
 implementation should allow multiple ways how to support asynchronous
 operations although currently the only implemented approach is based
 on `poll(2)`. Implementations using `kqueue(2)`, `epoll(2)`,
 `io_uring`, and IOCP hopefully follow soon. It should also be
 possible use various libraries for asynchronous operations like
 `libevent`, `libuv`, etc.
+
+## Help Welcome!
+
+There are plenty of things which need to be done. Some of these
+are listed in the [issues section](https://github.com/beman-project/net29/issues).
+Other contributions are, of course, also welcome.
+
+If you want to contribute, you won't be left alone! Please e-mail
+[Dietmar Kühl](mailto:dietmar.kuehl@me.com) if want help or mentoring
+for contributing to the library.
+
+## State of the Proposal
+
+At the February 2024/Tokyo meeting the Networking SG4 discussion
+recommended _not_ to provide a low-level interface for networking!
+Instead, a [IETF TAPS](https://datatracker.ietf.org/wg/taps/documents/)
+based implementation should be used. As a result, the shape of the
+interface will be different. However, even if the public interface
+is using [IETF TAPS](https://datatracker.ietf.org/wg/taps/documents/)
+the implementation will use a lower-level interface which can likely
+use something akin to the current interface.
 
 ## Building
 
