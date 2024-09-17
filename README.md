@@ -17,7 +17,9 @@ possible use various libraries for asynchronous operations like
 
 There are plenty of things which need to be done. Some of these
 are listed in the [issues section](https://github.com/beman-project/net29/issues).
-Other contributions are, of course, also welcome.
+Other contributions are, of course, also welcome. Aside from contributing
+code the project welcomes reports on usage experience, code reviews, defect
+reports, features requests, etc. There are plenty contribution opportunities.
 
 If you want to contribute, you won't be left alone! Please e-mail
 [Dietmar Kühl](mailto:dietmar.kuehl@me.com) if want help or mentoring
