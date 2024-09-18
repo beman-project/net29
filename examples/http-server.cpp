@@ -25,23 +25,32 @@ std::unordered_map<std::string, std::string> files{
     {"/logo.png", "examples/data/logo.png"},
 };
 
-auto process_request(auto& stream, std::string request) -> demo::task<>
+auto process_request(auto& stream, std::string request, auto done) -> demo::task<>
 {
     std::istringstream in(request);
     std::string method, url, version;
-    if (!(in >> method >> url >> version) || method != "GET")
-    {
-        std::cout << "not a [supported] HTTP request\n";
-        co_return;
-    }
-    auto it(files.find(url));
-    std::cout << "url='" << url << "' -> " << (it == files.end()? "not found": it->second) << "\n";
+
+    std::string        body;
     std::ostringstream out;
-    out << std::ifstream(it == files.end()? std::string(): it->second).rdbuf();
-    auto body{out.str()};
-    out.clear();
-    out.str(std::string());
-    out << "HTTP/1.1 " << (it == files.end()? "404 not found": "200 found\r\n")
+    if ((in >> method >> url >> version) && method == "GET")
+    {
+        auto it(files.find(url));
+        if (it != files.end())
+        {
+            out << std::ifstream(it->second).rdbuf();
+            body = out.str();
+            out.str({});
+        }
+        else if (url == "/exit")
+        {
+            body = "<html>"
+                   "<head><title>exiting</title></head>"
+                   "<body>exiting</body>"
+                   "</html>\n";
+            done();
+        }
+    }
+    out << "HTTP/1.1 " << (body.empty()? "404 not found": "200 found\r\n")
         << "Content-Length: " << body.size() << "\r\n\r\n"
         << body;
     auto response(out.str());
@@ -57,9 +66,9 @@ auto timeout(auto scheduler, auto duration, auto sender)
         );
 }
 
-auto make_client(auto scheduler, auto stream) -> demo::task<>
+auto make_client(auto scheduler, auto stream, auto done) -> demo::task<>
 {
-    char        buffer[16];
+    char        buffer[1024];
     std::string request;
     try{
         while (auto n = co_await timeout(scheduler, 3s, net::async_receive(stream, net::buffer(buffer))))
@@ -67,7 +76,7 @@ auto make_client(auto scheduler, auto stream) -> demo::task<>
             std::string_view sv(buffer, n);
             request += sv; 
             if (request.npos != sv.find("\r\n\r\n")) {
-                co_await process_request(stream, std::move(request));
+                co_await process_request(stream, std::move(request), done);
                 break;
             }
         }
@@ -87,15 +96,27 @@ auto main() -> int
     net::ip::tcp::acceptor server(context, ep);
     std::cout << "listening on " << ep << "\n";
 
-    scope.spawn(std::invoke([](auto scheduler, auto& scope, auto& server) -> demo::task<> {
+    auto done = [&]{ 
+        scope.spawn(
+            ex::schedule(context.get_scheduler())
+            | ex::then([&]{
+                scope.stop();
+                //std::cout << "stopped\n";
+            })
+        );
+    };
+    scope.spawn(std::invoke([](auto scheduler, auto& scope, auto& server, auto done)
+        -> demo::task<>
+    {
         while (true)
         {
             auto[stream, address] = co_await net::async_accept(server);
             std::cout << "received connection from " << address << "\n";
-            scope.spawn(make_client(scheduler, std::move(stream)));
+            scope.spawn(make_client(scheduler, std::move(stream), done));
 
         }
-    }, context.get_scheduler(), scope, server));
+    }, context.get_scheduler(), scope, server, done));
 
     context.run();
+    ex::sync_wait(scope.on_empty());
 }

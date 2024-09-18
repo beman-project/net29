@@ -22,8 +22,8 @@ code the project welcomes reports on usage experience, code reviews, defect
 reports, features requests, etc. There are plenty contribution opportunities.
 
 If you want to contribute, you won't be left alone! Please e-mail
-[Dietmar Kühl](mailto:dietmar.kuehl@me.com) if want help or mentoring
-for contributing to the library.
+[Dietmar Kühl](mailto:dietmar.kuehl@me.com) if you want help or
+mentoring for contributing to the library.
 
 ## State of the Proposal
 

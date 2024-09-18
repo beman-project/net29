@@ -80,11 +80,61 @@ namespace demo
                 ex::start(this->state);
             }
         };
+        struct state_base
+        {
+            state_base* next{};
+            virtual auto complete() -> void = 0;
+        };
+        template <typename Receiver>
+        struct state
+            : state_base
+        {
+            using operation_state_concept = ex::operation_state_t;
+            Receiver receiver;
+            scope*   parent{};
+            template <typename R>
+            state(R&& receiver, scope* parent)
+                : receiver(::std::forward<R>(receiver))
+                , parent(parent)
+            {
+            }
+            auto start() noexcept -> void
+            {
+                if (this->parent->count)
+                    this->next = ::std::exchange(this->parent->awaiting, this);
+                else
+                    this->complete();
+            }
+            auto complete() -> void override
+            {
+                ex::set_value(::std::move(receiver));
+            }
+        };
+        struct sender
+        {
+            using sender_concept = ex::sender_t;
+            using completion_signatures
+                = ex::completion_signatures<ex::set_value_t()>;
+            scope* parent{};
+            template <typename Receiver>
+            auto connect(Receiver&& receiver)
+                -> state<::std::remove_cvref_t<Receiver>>
+            {
+                return { ::std::forward<Receiver>(receiver), this->parent };
+            }
+        };
 
-        std::atomic<std::size_t> count{};
         ex::inplace_stop_source  source;
+        std::atomic<std::size_t> count{};
+        state_base*              awaiting{};
 
-        auto complete() -> void {}
+        auto complete() -> void
+        {
+            for (auto* n{std::exchange(awaiting, {})}; n; n = n->next)
+            {
+                n->complete();
+            }
+        }
 
     public:
         ~scope()
@@ -101,6 +151,10 @@ namespace demo
         auto stop()
         {
             this->source.request_stop();
+        }
+        auto on_empty() -> sender
+        {
+            return {this};
         }
     };
 }
