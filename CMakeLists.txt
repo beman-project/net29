@@ -1,28 +1,34 @@
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # cmake-format: off
 # /CMakeLists.txt -*-makefile-*-
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # cmake-format: on
 
 cmake_minimum_required(VERSION 3.23)
-
 project(beman_net29 VERSION 0.0.0 LANGUAGES CXX)
-
-enable_testing()
+set(TARGET_NAME net29)
+set(TARGET_PREFIX beman.${TARGET_NAME})
+set(TARGET_LIBRARY beman_${TARGET_NAME})
+set(TARGET_ALIAS beman::${TARGET_NAME})
+set(TARGETS_EXPORT_NAME ${CMAKE_PROJECT_NAME}Targets)
 
 set(CMAKE_CXX_STANDARD 23)
-set(TARGETS_EXPORT_NAME ${CMAKE_PROJECT_NAME}Targets)
 
 include(FetchContent)
 FetchContent_Declare(
     execution26
     # for local development, use SOURCE_DIR <path-to>/execution26
     GIT_REPOSITORY https://github.com/beman-project/execution26
-    GIT_TAG 22affb6
+    GIT_TAG 81c58fe
 )
 FetchContent_MakeAvailable(execution26)
 
-add_subdirectory(src)
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(src/beman/${TARGET_NAME}/tests)
+  enable_testing()
+endif()
+
+add_subdirectory(src/beman/net29)
 add_subdirectory(examples)
 
 include(GNUInstallDirs)
