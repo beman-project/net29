@@ -4,6 +4,8 @@
 # cmake-format: on
 
 set(EXAMPLES
+  set_next
+  time-server
   http-server
   empty
   server
